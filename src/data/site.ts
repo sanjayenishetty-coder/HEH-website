@@ -32,26 +32,25 @@ export const site = {
   },
 } as const;
 
+/** Header navigation. The core team page is linked from the footer instead. */
 export const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/events", label: "Events" },
   { href: "/members", label: "Members" },
-  { href: "/team", label: "Core Team" },
+  { href: "/events", label: "Events" },
 ] as const;
 
+/** Industries strip that scrolls under the hero. */
 export const sectors = [
-  "Technology",
   "Manufacturing",
   "Healthcare",
   "Real Estate",
   "Finance",
+  "D2C",
+  "Technology",
+  "Food & Beverage",
   "Advisory",
   "Travel",
-  "D2C",
   "Education",
-  "Food & Beverage",
-  "Retail",
-  "Logistics",
 ] as const;
 
 export const stats = [
