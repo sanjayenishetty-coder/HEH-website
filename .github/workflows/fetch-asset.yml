@@ -1,0 +1,44 @@
+name: Fetch asset into repo
+
+# Manually triggered helper: downloads a file from a URL and commits it to the
+# given path. Used to bring images generated elsewhere (e.g. Canva exports)
+# into the repo without a local checkout.
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: "Direct download URL of the file"
+        required: true
+        type: string
+      path:
+        description: "Destination path in the repo"
+        required: true
+        default: "public/hero.jpg"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download
+        env:
+          URL: ${{ inputs.url }}
+          DEST: ${{ inputs.path }}
+        run: |
+          mkdir -p "$(dirname "$DEST")"
+          curl -fsSL "$URL" -o "$DEST"
+          file "$DEST"
+          ls -la "$DEST"
+      - name: Commit
+        env:
+          DEST: ${{ inputs.path }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$DEST"
+          git commit -m "Add asset $DEST" || echo "nothing to commit"
+          git push
