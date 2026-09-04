@@ -19,7 +19,7 @@ All copy and data live in `src/data/`. Change a value, commit, and the site rede
 
 ## Pages
 
-`/` home · `/events` · `/members` (locked, "Launching soon") · `/team` · `/apply` · `/login` (placeholder) · `/privacy`
+`/` home · `/members` (locked, "Launching soon") · `/team` · `/apply` · `/login` (placeholder) · `/privacy`
 
 SEO is built in: per-page titles and descriptions, Open Graph image, `sitemap.xml`, `robots.txt`, and Organization + FAQ structured data for search engines and AI assistants.
 
