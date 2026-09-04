@@ -36,7 +36,6 @@ export const site = {
 export const navLinks = [
   { href: "/", label: "Home" },
   { href: "/members", label: "Members" },
-  { href: "/events", label: "Events" },
 ] as const;
 
 /** Industries strip that scrolls under the hero. */

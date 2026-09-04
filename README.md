@@ -9,7 +9,6 @@ All copy and data live in `src/data/`. Change a value, commit, and the site rede
 | To change… | Edit |
 |---|---|
 | Contact details, address, social links, membership fee, apply-form link, nav | `src/data/site.ts` |
-| Events (add new ones at the top; upcoming/past is automatic by date) | `src/data/events.ts` |
 | Core team (names, roles, LinkedIn, email; photos in `public/team/`) | `src/data/team.ts` |
 | Benefits, eligibility criteria, application steps, what membership includes | `src/data/benefits.ts` |
 | FAQ | `src/data/faq.ts` |
@@ -17,7 +16,6 @@ All copy and data live in `src/data/`. Change a value, commit, and the site rede
 | Privacy policy | `src/data/privacy.ts` |
 | Colours, fonts, spacing | `src/app/globals.css` (`@theme` block) |
 
-Event posters go in `public/events/`; keep images under ~300 KB (JPEG, max 1200 px wide).
 
 ## Pages
 

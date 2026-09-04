@@ -4,7 +4,6 @@ import { site } from "@/data/site";
 import { Icon } from "@/components/ui";
 
 const explore = [
-  { href: "/events", label: "Events & calendar" },
   { href: "/members", label: "Member directory" },
   { href: "/team", label: "Core team" },
   { href: "/#membership", label: "Membership" },
