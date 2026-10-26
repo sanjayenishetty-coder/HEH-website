@@ -16,7 +16,7 @@
         <span class="logo-text"><span class="top">HYDERABAD</span><span class="bottom">entrepreneur<b>Hub</b></span></span>
         <svg viewBox="0 0 52 42" aria-hidden="true"><path d="M4 8 L18 4 V38 L4 34Z" fill="#0d2a4f"/><path d="M20 6 L32 8 V36 L20 38Z" fill="#f5a623"/><path d="M34 8 L48 4 V34 L34 38Z" fill="#0d2a4f"/><path d="M22 8 L30 9 V35 L22 36Z" fill="#f26a1b"/></svg>
       </a>
-      <button class="menu-toggle" aria-label="Open menu" onclick="document.querySelector('.nav').classList.toggle('open')">☰</button>
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
       <nav class="nav">
         <a href="index.html">Home</a>
         <a class="active" href="about.html">About HEH</a>
@@ -84,5 +84,16 @@
       </div>
     </section>
   </main>
+  <script>
+    const toggle = document.querySelector('.menu-toggle');
+    const nav = document.querySelector('.nav');
+    const setMenu = (open) => {
+      nav.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', open);
+      toggle.textContent = open ? '✕' : '☰';
+    };
+    toggle.addEventListener('click', () => setMenu(!nav.classList.contains('open')));
+    nav.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
+  </script>
 </body>
 </html>
