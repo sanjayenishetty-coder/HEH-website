@@ -656,6 +656,7 @@ textarea.input { min-height: 120px; resize: vertical; }
 .profile-head .ph { min-height: 190px; }
 .profile-head h1 { font-size: clamp(30px, 3.4vw, 38px); }
 .profile-head .role { margin-top: 8px; font-size: 18px; line-height: 1.5; }
+.profile-head .heh-role { margin-top: 6px; color: var(--orange); font-weight: 600; font-size: 16px; }
 .profile-head .badge { margin-top: 10px; }
 .profile-head .facts { display: flex; flex-wrap: wrap; gap: 0; margin-top: 20px; }
 .profile-head .facts > div { display: flex; gap: 10px; padding: 0 28px; border-left: 1px solid var(--line); font-size: 13.5px; color: var(--muted); }

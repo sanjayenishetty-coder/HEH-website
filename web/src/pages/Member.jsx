@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon.jsx';
 import { CountedTextarea, Field, FormError, useSubmit } from '../components/forms.jsx';
 import { IndustryBadge, Media } from '../components/ui.jsx';
+import { meta } from '../lib/api.js';
 import { useApi, useParam, useTitle } from '../lib/hooks.js';
 
 // Member profile page + "Send Enquiry" modal (enquiries go to HEH, not directly to the member). /member?m=<slug>
@@ -64,6 +65,16 @@ function EnquiryModal({ slug, title, onClose }) {
   );
 }
 
+// HEH group(s) and role from the About HEH > Members page, e.g. "Executive Council · Chief Mentor & Advisor".
+function HehRole({ m }) {
+  const [types, setTypes] = useState([]);
+  useEffect(() => { meta().then((x) => setTypes(x.memberTypes || []), () => {}); }, []);
+  const groups = (m.member_types || []).map((k) => types.find(([key]) => key === k)?.[1]).filter(Boolean);
+  const role = String(m.team_role || '').split('\n')[0].trim();
+  const text = [groups.join(', '), role].filter(Boolean).join(' · ');
+  return text ? <p className="heh-role">{text}</p> : null;
+}
+
 function Profile({ m, onEnquire }) {
   const trio = [['target', 'Experience', m.experience], ['bulb', 'Expertise', m.expertise], ['chart-line', 'Passion', m.passion]].filter((x) => x[2]);
   const offers = m.offers || [];
@@ -82,6 +93,7 @@ function Profile({ m, onEnquire }) {
             <Media url={m.photo_url} label={m.photo_url ? m.full_name : ''} icon="user" className={m.photo_url ? '' : 'person'} />
             <div>
               <h1>{m.full_name}</h1>
+              <HehRole m={m} />
               <div className="role">{m.designation}<br />{m.company}</div>
               {m.industry && <IndustryBadge industry={m.industry} />}
               <div className="facts">
