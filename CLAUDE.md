@@ -7,10 +7,11 @@ Website + API for Hyderabad Entrepreneurs Hub (HEH). See README.md for structure
 - `htmls/` is the website (static HTML/CSS/vanilla JS, no build, no framework). `backend/` is a small Node/Express API on PostgreSQL. Keep both framework-free unless asked.
 - `images/` (and `images/Website/`) hold the design screenshots; match them when changing layout or copy.
 - Header, footer and icons come from `htmls/js/site.js`; pages set the active nav with `<body data-nav="...">`. Don't paste header/footer markup into pages.
+- Logo and favicon (from entrepreneurhub.in) are in `htmls/assets/brand/`: `logo.png` (transparent) for light backgrounds, `logo-light.png` (white text) for the navy footer.
 - Use the CSS variables in `:root` of `styles.css` for colours/fonts rather than new hex values.
 - Pages must work at phone width. Breakpoints in `styles.css`: 1080px (tighter header), 960px (header button hidden, 4-up grids go 2-up), 860px (phone menu, single column), 520px (small phones). Check desktop at 1024px too, since the designs are 1024 wide.
 - Icons: `<i data-i="name"></i>` in HTML or `HEH.icon('name')` in JS. Inside a round badge (`.ic`) site.js swaps in the solid version automatically (`FILLED` in site.js), matching the designs; add a solid version there when you add a badge icon.
-- CSS/JS links carry a version (`styles.css?v=20261031b`). Bump it in every page (and `admin/index.html`) whenever you change CSS or JS.
+- CSS/JS links carry a version (`styles.css?v=20261031d`). Bump it in every page (and `admin/index.html`) whenever you change CSS or JS.
 - Dynamic content (events, members, stories) is managed in `/admin/`; `backend/src/seed.js` only holds sample content.
 - Admin login: `ADMIN_USER` + bcrypt `ADMIN_PASSWORD_HASH` in backend `.env`. Bcrypt hashes contain `$`, so never write the hash through an unquoted shell heredoc/variable (it gets mangled); write `.env` with node or a quoted heredoc. Login trims spaces; 10 failed tries per 15 min locks it.
 - Form option lists (industries, turnover ranges, enquiry types, story categories) live in `backend/src/constants.js` and are served by `GET /api/meta`.

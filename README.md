@@ -10,6 +10,7 @@ Website for **Hyderabad Entrepreneurs Hub (HEH)**, built from the design screens
 images/                    Design screenshots (source of truth for layout/content)
 htmls/                     The website (static HTML/CSS/JS) — deployed to /srv/heh/prod/frontend
   styles.css               Shared styles (colours/fonts are CSS variables in :root; breakpoints 1080/960/860/520px)
+  assets/brand/            Logo (logo.png, white-text logo-light.png for the footer) and favicons
   js/site.js               Shared header, footer, icon sprite and helpers (api, formatting, form errors)
   index.html               Home
   about.html               About HEH
@@ -34,7 +35,7 @@ The header/footer are rendered by `js/site.js`: each page has an empty `<header 
 Icons: `<i data-i="calendar"></i>` in HTML or `HEH.icon('calendar')` in JS (list in `js/site.js`).
 Inside round badges (`<span class="ic">`) the solid version from `FILLED` in `js/site.js` is used automatically.
 
-CSS/JS are linked with a version, e.g. `styles.css?v=20261031b`. When you change CSS or JS, bump that
+CSS/JS are linked with a version, e.g. `styles.css?v=20261031d`. When you change CSS or JS, bump that
 value in every page and in `admin/index.html` so browsers load the new files.
 
 ## Run locally

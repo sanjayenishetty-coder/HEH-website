@@ -1,12 +1,12 @@
 /* HEH admin panel (extends ../styles.css) */
 body.admin { background: #f4f6f9; font-size: 15px; }
 .login { min-height: 100vh; display: grid; place-items: center; padding: 20px; }
+.login .logo { justify-content: center; }
 .login form { width: 100%; max-width: 400px; }
 
 .topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 24px; padding: 10px 24px; background: #fff; border-bottom: 1px solid var(--line-cool); flex-wrap: wrap; }
 .topbar .brand { display: flex; align-items: center; gap: 10px; }
-.topbar .logo-text .top { font-size: 17px; }
-.topbar .logo-text .bottom { font-size: 16px; }
+.topbar .brand img { display: block; height: 38px; width: auto; }
 .topbar .tag { padding: 3px 8px; border-radius: 6px; background: var(--navy); color: #fff; font-size: 12px; font-weight: 600; }
 .topbar .right { margin-left: auto; display: flex; align-items: center; gap: 16px; font-size: 14px; }
 .tabs { display: flex; gap: 4px; flex-wrap: wrap; }

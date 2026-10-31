@@ -115,11 +115,9 @@
   }).observe(document.body, { childList: true, subtree: true });
 
   // ---------- Header & footer ----------
-  const LOGO_MARK =
-    '<svg viewBox="0 0 52 42" aria-hidden="true"><path d="M4 8 L18 4 V38 L4 34Z" fill="#0d2a4f"/><path d="M20 6 L32 8 V36 L20 38Z" fill="#f5a623"/><path d="M34 8 L48 4 V34 L34 38Z" fill="#0d2a4f"/><path d="M22 8 L30 9 V35 L22 36Z" fill="#f26a1b"/></svg>';
-  const LOGO_MARK_LIGHT = LOGO_MARK.replace(/#0d2a4f/g, '#ffffff');
+  // Logo from entrepreneurhub.in (assets/brand); the light version has white text for the navy footer.
   const logo = (light) =>
-    `<a class="logo" href="index.html" aria-label="Hyderabad Entrepreneurs Hub home"><span class="logo-text"><span class="top">HYDERABAD</span><span class="bottom">entrepreneur<b>Hub</b></span></span>${light ? LOGO_MARK_LIGHT : LOGO_MARK}</a>`;
+    `<a class="logo" href="index.html"><img src="assets/brand/logo${light ? '-light' : ''}.png" alt="Hyderabad Entrepreneurs Hub" width="448" height="136"></a>`;
 
   const NAV = [
     ['home', 'index.html', 'Home'],
@@ -160,7 +158,7 @@
         <div><h4>Be Part of HEH</h4><p style="margin-top:0">Join a growing community of ambitious entrepreneurs.</p>
           <a class="btn btn-primary" href="membership-apply.html">Become a Member ${icon('arrow-right')}</a></div>
       </div>
-      <div class="legal"><div class="container"><span>© ${new Date().getFullYear()} Hyderabad Entrepreneurs Hub. All rights reserved.</span><span>Hyderabad, Telangana, India</span></div></div>`;
+      <div class="legal"><div class="container"><span>© ${new Date().getFullYear()} Hyderabad Entrepreneurs Hub. All rights reserved.</span><span>Hyderabad, Telangana, India</span><span>Powered by <a class="powered" href="https://visutechnologies.in/" target="_blank" rel="noopener">Visu Technologies</a></span></div></div>`;
   }
 
   // ---------- Helpers ----------
