@@ -87,7 +87,7 @@ export default function Members() {
               <Select className="input" name="industry" placeholder="All Industries" options={options} value={industry} onChange={(e) => setIndustry(e.target.value)} />
             </label>
           </div>
-          <div className="card-grid four" style={{ marginTop: 26 }}>{grid}</div>
+          <div className="card-grid four member-directory" style={{ marginTop: 26 }}>{grid}</div>
           <div className="more">
             {!error && items && items.length < total && (
               <button className="btn btn-outline" onClick={() => load(items.length, items)}>Load More Members <Icon name="arrow-down" /></button>

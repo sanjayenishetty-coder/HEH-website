@@ -217,8 +217,8 @@ function Past({ e }) {
         </section>
       )}
 
-      <section className="cta-light" style={{ marginTop: 20 }}>
-        <div className="container no-icon" style={{ gridTemplateColumns: '1fr auto' }}>
+      <section className="cta-light no-icon" style={{ marginTop: 20 }}>
+        <div className="container">
           <div>
             <h2 className="title sm">Explore More HEH Events</h2>
             <p style={{ marginTop: 12 }}>Connect with entrepreneurs, exchange ideas and explore meaningful business opportunities through HEH.</p>

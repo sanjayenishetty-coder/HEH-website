@@ -22,7 +22,9 @@ async function allMembers() {
 }
 
 function PersonCard({ m }) {
-  const role = m.team_role || m.designation;
+  // team_role: first line is the role (orange); any further lines are shown below it in smaller text.
+  const [roleLine, ...moreLines] = (m.team_role || '').split('\n').map((t) => t.trim()).filter(Boolean);
+  const role = roleLine || m.designation;
   const company = m.team_role ? '' : m.company;
   return (
     <Link className="team-card" to={`/member?m=${encodeURIComponent(m.slug)}`}>
@@ -32,6 +34,7 @@ function PersonCard({ m }) {
       <div className="team-cap">
         <h3>{m.full_name}</h3>
         {role && <span>{role}</span>}
+        {moreLines.map((t) => <small key={t}>{t}</small>)}
         {company && <small>{company}</small>}
       </div>
     </Link>

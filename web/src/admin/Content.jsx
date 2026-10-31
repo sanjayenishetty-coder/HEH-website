@@ -54,7 +54,7 @@ const CONTENT = {
       ['industry', 'Industry', 'select', meta.industries.map((i) => [i, i])], ['location', 'Business location', 'text'],
       ['photo_url', 'Profile photo', 'image'],
       ['member_types', 'Member type (groups on the About HEH > Members page)', 'checks', meta.memberTypes || []],
-      ['team_role', 'Role on the Members page (e.g. Marketing Head; blank = designation)', 'text'],
+      ['team_role', 'Role on the Members page (e.g. Marketing Head; blank = designation). First line is the role; extra lines show below it in smaller text', 'textarea'],
       ['team_order', 'Order on the Members page (1, 2, 3… within the group; 0 = after those)', 'text'],
       ['bio', 'About the entrepreneur', 'textarea'],
       ['experience', 'Experience (short)', 'text'], ['expertise', 'Expertise (short)', 'text'], ['passion', 'Passion (short)', 'text'],
