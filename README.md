@@ -18,7 +18,11 @@ web/                       The website + admin panel: React 18 + react-router, b
   src/components/          Layout (header/footer), Icon/Ic (icons), ui (Media, badges), forms (useSubmit, Field...)
   src/lib/                 api (fetch /api), format (dates in India time), hooks (useTitle, useParam, useApi), icons
   src/pages/               One component per page (Home, About, Membership, MembershipApply, Contact, Events,
-                           Event, EventRegister, Community, Members, Member, SuccessStories, Story, ...)
+                           Event, EventRegister, Community, Members, Member, SuccessStories, Story, Faqs,
+                           OurMembers, WhyHeh, WhoCanJoin, MemberVoices, MembershipPlan, ...)
+                           The header "About HEH" drop-down list is ABOUT_MENU in components/Layout.jsx;
+                           its "Members" item is OurMembers (/our-members, grouped by member type), separate
+                           from the Community section's member directory (/members)
   src/admin/               Admin panel (/admin/): Login, Dashboard, Submissions, Content editors
   scripts/route-pages.js   Post-build: copies dist/index.html to about.html, events.html, admin/index.html ...
 backend/                   Node/Express API (PostgreSQL) — deployed to /srv/heh/prod/backend
@@ -68,7 +72,8 @@ npm run db:migrate:new -- add_x_column # create migrations/NNNN_add_x_column.sql
 ```
 
 Never edit a migration that has been applied (the runner refuses: "Already-applied migrations were
-edited"); add a new one. `0001` is the initial schema, `0002` loads the HEH member list.
+edited"); add a new one. `0001` is the initial schema, `0002` loads the HEH member list, `0003` adds member
+types (Executive Council (key core_team) / Working Committee / Advisory Board, list in `backend/src/constants.js`) shown on `/our-members`.
 
 ## Admin
 
@@ -121,8 +126,7 @@ On Windows git-bash, use `tar --force-local` when packing files from a `C:` path
 ## Before launch
 
 - Replace the sample events and success stories (seeded from the designs) in `/admin/`; add member photos and profiles.
-- Replace the placeholder phone number "+91 98765 43210" in `web/src/pages/Contact.jsx`.
-- Set the real LinkedIn / Instagram links in the footer (`web/src/components/Layout.jsx`, currently `#`).
+- Contact details (email, phone/WhatsApp, address, LinkedIn, Facebook) come from entrepreneurhub.in: `web/src/pages/Contact.jsx` and the footer in `web/src/components/Layout.jsx`.
 
 > The server hosts other projects (kvgc, yoga, stock360, zoofilings, batterydukaan, whatsapp, ...).
 > Only touch `/srv/heh`, `heh-api.service`, the `heh_test` database and the two `heh-*` nginx files.

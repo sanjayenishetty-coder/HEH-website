@@ -12,6 +12,7 @@ Website + API for Hyderabad Entrepreneurs Hub (HEH). See README.md for structure
 - Pages must work at phone width. Breakpoints in `styles.css`: 1080px (tighter header), 960px (header button hidden, 4-up grids go 2-up), 860px (phone menu, single column), 520px (small phones). Check desktop at 1024px too, since the designs are 1024 wide.
 - Icons: `<Icon name="..." />`; round badges `<Ic name="..." tone="blue" />` use the solid glyph from `FILLED` in `src/lib/icons.js` (matching the designs); add a solid version there when you add a badge icon.
 - Built assets have hashed names, so no manual cache-busting is needed.
+- Write `useEffect` bodies with braces (`useEffect(() => { window.scrollTo(0, 0); }, ...)`). A concise arrow returns its value, and React calls a non-function return as cleanup; `window.scrollTo` returns a Promise in current Chrome/Edge, which crashed every page change until a refresh.
 - Dynamic content (events, members, stories) is managed in `/admin/`; `backend/src/seed.js` only holds sample content.
 - Database changes go in a new `backend/migrations/NNNN_name.sql` (`npm run db:migrate:new -- name`), never by editing an applied migration (the runner checks checksums). Run `npm run db:migrate` locally and on the server.
 - Admin login: `ADMIN_USER` + bcrypt `ADMIN_PASSWORD_HASH` in backend `.env`. Bcrypt hashes contain `$`, so never write the hash through an unquoted shell heredoc/variable (it gets mangled); write `.env` with node or a quoted heredoc. Login trims spaces; 10 failed tries per 15 min locks it.

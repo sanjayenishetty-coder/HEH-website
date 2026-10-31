@@ -82,7 +82,8 @@ const asJsonObject = (v) => (v && typeof v === 'object' && !Array.isArray(v) && 
 const asInt = (v) => (Number.isInteger(Number(v)) ? Number(v) : 0);
 const asImage = (v) => {
   const s = asText(v);
-  return s === '' || s.startsWith('/uploads/') || /^https:\/\//i.test(s) ? s : '';
+  // /uploads/ = uploaded in admin; /assets/ = shipped with the site (e.g. core team photos)
+  return s === '' || s.startsWith('/uploads/') || s.startsWith('/assets/') || /^https:\/\//i.test(s) ? s : '';
 };
 const asUrl = (v) => {
   const s = asText(v);
@@ -119,8 +120,10 @@ const resources = {
       company_about: asText, products_services: asText, website: asUrl,
       offers: asJsonArray, opportunities: asJsonArray, collaboration_interests: asJsonArray,
       email: asText, phone: asText, status: (v) => (v === 'inactive' ? 'inactive' : 'active'), sort_order: asInt,
+      member_types: (v) => JSON.stringify(C.memberTypes.map(([k]) => k).filter((k) => Array.isArray(v) && v.includes(k))),
+      team_role: asText, team_order: asInt,
     },
-    listCols: 'id, slug, member_code, full_name, designation, company, industry, status',
+    listCols: 'id, slug, member_code, full_name, designation, company, industry, status, member_types',
   },
   stories: {
     table: 'stories',
@@ -278,7 +281,7 @@ router.get('/summary', wrap(async (req, res) => {
 }));
 
 router.get('/meta', (req, res) => {
-  res.json({ industries: C.industries, storyCategories: C.storyCategories, eventCategories: C.eventCategories });
+  res.json({ industries: C.industries, storyCategories: C.storyCategories, eventCategories: C.eventCategories, memberTypes: C.memberTypes });
 });
 
 // Remove an uploaded file that is no longer referenced (best effort; only inside uploadDir).

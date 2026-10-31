@@ -41,10 +41,17 @@ const storyCategories = [
 
 const eventCategories = ['spotlight', 'workshop'];
 
+// Groups on the "About HEH > Members" page, in display order: [key, label]
+const memberTypes = [
+  ['core_team', 'Executive Council'], // key kept from when this group was called Core Team
+  ['working_committee', 'Working Committee'],
+  ['advisory_board', 'Advisory Board'],
+];
+
 const statuses = {
   applications: ['received', 'under_review', 'interaction', 'approved', 'rejected'],
   enquiries: ['received', 'in_progress', 'closed'],
   registrations: ['confirmed', 'cancelled', 'attended'],
 };
 
-module.exports = { industries, turnoverRanges, enquiryTypes, storyCategories, eventCategories, statuses };
+module.exports = { industries, turnoverRanges, enquiryTypes, storyCategories, eventCategories, memberTypes, statuses };

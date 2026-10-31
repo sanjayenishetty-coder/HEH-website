@@ -69,6 +69,93 @@ p { margin: 0; }
 }
 .menu-toggle { display: none; background: none; border: 0; font-size: 28px; color: var(--navy); cursor: pointer; }
 
+/* "About HEH" drop-down (desktop: card on hover/focus; phone menu: tap the chevron) */
+.nav-drop { position: relative; display: flex; align-items: center; gap: 3px; }
+.drop-toggle { display: inline-flex; align-items: center; justify-content: center; padding: 4px 0; background: none; border: 0; color: var(--ink); cursor: pointer; }
+.drop-toggle .i { width: 15px; height: 15px; stroke-width: 2.2; transition: transform .2s; }
+.nav .drop-menu a { display: block; padding: 10px 22px; font-size: 14.5px; font-weight: 500; color: var(--ink); white-space: nowrap; }
+.nav .drop-menu a::after { display: none; }
+.nav .drop-menu a:hover, .nav .drop-menu a.current { background: var(--orange-soft); color: var(--orange); }
+@media (min-width: 861px) {
+  .drop-menu {
+    position: absolute; top: calc(100% + 18px); left: 50%; z-index: 40; min-width: 230px; padding: 10px 0;
+    background: var(--white); border: 1px solid var(--line-cool); border-radius: 16px;
+    box-shadow: 0 18px 40px rgba(13, 42, 79, .14);
+    opacity: 0; visibility: hidden; transform: translate(-50%, -8px) scale(.97); transform-origin: top center;
+    transition: opacity .18s, transform .18s, visibility .18s;
+  }
+  .drop-menu::before { content: ""; position: absolute; left: 0; right: 0; top: -20px; height: 20px; } /* keeps hover across the gap */
+  .nav-drop:hover .drop-menu, .nav-drop:focus-within .drop-menu {
+    opacity: 1; visibility: visible; transform: translate(-50%, 0) scale(1);
+  }
+  .nav-drop:hover .drop-toggle .i, .nav-drop:focus-within .drop-toggle .i { transform: rotate(180deg); color: var(--orange); }
+  .nav-drop.hide .drop-menu { opacity: 0; visibility: hidden; }
+}
+
+section[id] { scroll-margin-top: 90px; }
+
+/* ---------- Why HEH ---------- */
+.why-lead { margin-top: 18px; max-width: 640px; font-size: 18px; color: var(--muted); }
+.why-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.why-card { padding: 26px 24px 24px; background: var(--white); border: 1px solid var(--line-cool); border-radius: 16px; box-shadow: var(--shadow); }
+.section .why-card h2 { margin: 16px 0 8px; font-size: 22px; color: var(--navy); }
+.why-card > p { color: var(--muted); font-size: 15px; }
+.why-card ul { list-style: none; margin: 16px 0 0; padding: 16px 0 0; border-top: 1px solid var(--line); display: grid; gap: 9px; }
+.why-card li { display: flex; gap: 10px; font-size: 14.5px; line-height: 1.45; }
+.why-card li .i { flex: none; width: 18px; height: 18px; margin-top: 1px; color: var(--orange); stroke-width: 2.4; }
+.why-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 960px; }
+@media (max-width: 960px) { .why-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .why-grid { grid-template-columns: 1fr; } }
+
+/* ---------- Member Voices (vertical YouTube Shorts) ---------- */
+.voices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; max-width: 1040px; margin: 0 auto; }
+.voice { width: 100%; max-width: 340px; margin: 0 auto; overflow: hidden; border-radius: 22px; background: var(--navy); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.voice iframe { display: block; width: 100%; aspect-ratio: 9 / 16; border: 0; }
+.voices-more { margin-top: 30px; text-align: center; color: var(--muted); }
+.voices-more a { color: var(--orange); font-weight: 600; }
+@media (max-width: 860px) { .voices { grid-template-columns: 1fr; gap: 22px; } }
+
+/* ---------- Membership Details (plan card) ---------- */
+.plan { display: grid; grid-template-columns: 2fr 3fr; max-width: 1040px; margin: 0 auto; overflow: hidden; background: var(--white); border: 1px solid var(--line); border-radius: 28px; box-shadow: 0 18px 40px rgba(13, 42, 79, .10); }
+.plan-price { padding: 40px 36px; background: var(--navy-deep); color: rgba(255, 255, 255, .85); }
+.plan-price .eyebrow { color: var(--orange); }
+.plan-price .amount { margin-top: 22px; font: 800 52px/1 var(--sans); color: #fff; }
+.plan-price .per { margin-top: 6px; color: rgba(255, 255, 255, .6); }
+.plan-price ul { list-style: none; margin: 28px 0 32px; padding: 0; display: grid; gap: 10px; font-size: 15px; }
+.plan-price li, .plan-included li { display: flex; gap: 10px; align-items: flex-start; }
+.plan-price li .i { flex: none; width: 18px; height: 18px; margin-top: 2px; color: var(--orange); stroke-width: 2.4; }
+.plan-price .note { margin-top: 14px; text-align: center; font-size: 13px; color: rgba(255, 255, 255, .55); }
+.plan-included { padding: 40px 36px; }
+.section .plan-included h2 { font-size: 22px; color: var(--navy); }
+.plan-included ul { list-style: none; margin: 22px 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; font-size: 15px; }
+.plan-included .tick { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--green-soft); color: var(--green); }
+.plan-included .tick .i { width: 13px; height: 13px; stroke-width: 2.6; }
+.plan-eligibility { max-width: 1040px; margin: 24px auto 0; }
+.plan-eligibility a { color: var(--orange); font-weight: 600; }
+@media (max-width: 860px) {
+  .plan { grid-template-columns: 1fr; border-radius: 20px; }
+  .plan-price, .plan-included { padding: 30px 24px; }
+  .plan-included ul { grid-template-columns: 1fr; }
+}
+
+.wa-link { display: inline-block; margin-top: 6px; font-size: 14px; font-weight: 600; color: var(--green); }
+.wa-link:hover { text-decoration: underline; }
+
+/* ---------- FAQs ---------- */
+.faq-intro { font-size: 17px; color: var(--muted); margin-bottom: 22px; }
+.faq-list { display: grid; gap: 12px; max-width: 880px; }
+.faq { background: var(--white); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+.faq summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px;
+  font: 600 18px/1.35 var(--serif); color: var(--navy); cursor: pointer; list-style: none;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary .i { flex: none; width: 20px; height: 20px; color: var(--orange); transition: transform .2s; }
+.faq[open] summary .i { transform: rotate(180deg); }
+.faq p { padding: 0 22px 20px; color: var(--muted); line-height: 1.65; }
+.faq-more { margin-top: 26px; max-width: 880px; }
+.faq-more a { color: var(--orange); font-weight: 600; }
+
 /* ---------- Buttons ---------- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 10px;
@@ -644,11 +731,20 @@ textarea.input { min-height: 120px; resize: vertical; }
 .team h2 { font-size: clamp(32px, 4vw, 40px); margin: 18px 0 14px; }
 .team p { max-width: 760px; }
 .team-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; margin-top: 34px; }
-.team-card { margin: 0; background: var(--white); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
-.team-card img { display: block; width: 100%; aspect-ratio: 4 / 4.2; object-fit: cover; object-position: center 20%; background: var(--placeholder); }
-.team-card figcaption { padding: 16px 20px 20px; }
+.team-card { display: block; margin: 0; background: var(--white); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s; }
+a.team-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(13, 42, 79, .12); }
+.team-card img, .team-ph { display: block; width: 100%; aspect-ratio: 4 / 4.2; object-fit: cover; object-position: center 20%; background: var(--placeholder); }
+.team-ph { display: grid; place-items: center; color: #a3abb8; }
+.team-ph .i { width: 42%; height: auto; aspect-ratio: 1; stroke-width: 1.3; }
+.team-cap { padding: 16px 20px 20px; }
 .team-card h3 { font-size: 21px; color: var(--navy); }
 .team-card span { display: block; margin-top: 4px; color: var(--orange); font-weight: 600; font-size: 14.5px; }
+.team-card small { display: block; margin-top: 3px; color: var(--muted); font-size: 14px; }
+/* About HEH > Members: one .team section per member type */
+.member-group.alt { background: var(--white); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.member-group-empty { margin-top: 22px; padding: 22px; border: 1px dashed var(--line); border-radius: 12px; text-align: center; }
+.member-group-cta { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.member-group-cta p { margin-top: 10px; color: var(--muted); }
 
 /* ---------- Membership ---------- */
 .steps { display: grid; grid-template-columns: repeat(5, 1fr); padding: 18px 10px; }
@@ -736,6 +832,14 @@ textarea.input { min-height: 120px; resize: vertical; }
   .nav a:last-child { border-bottom: 0; }
   .nav a.active { color: var(--orange); }
   .nav a.active::after { display: none; }
+  .nav-drop { flex-wrap: wrap; gap: 0; border-bottom: 1px solid var(--line); }
+  .nav .nav-drop > a { flex: 1; border-bottom: 0; }
+  .drop-toggle { width: 44px; height: 44px; margin-right: -10px; }
+  .drop-toggle .i { width: 20px; height: 20px; }
+  .nav-drop.open .drop-toggle .i { transform: rotate(180deg); color: var(--orange); }
+  .drop-menu { display: none; width: 100%; padding: 0 0 10px 14px; border-left: 2px solid var(--orange-soft); margin-bottom: 12px; }
+  .nav-drop.open .drop-menu { display: block; }
+  .nav .drop-menu a { padding: 10px 12px; font-size: 15px; border-bottom: 0; border-radius: 8px; }
 
   .eyebrow, .eyebrow.wide { letter-spacing: .12em; font-size: 13px; }
   .page-hero { padding: 20px 0 32px; }

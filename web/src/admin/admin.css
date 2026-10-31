@@ -44,6 +44,7 @@ table.data .sub { color: var(--muted); font-size: 12.5px; }
 .modal .box.wide { max-width: 860px; }
 .editor h2 { font-size: 24px; margin-bottom: 16px; }
 .editor fieldset { border: 1px solid var(--line-cool); border-radius: 12px; padding: 14px 16px 16px; margin: 16px 0 0; }
+.editor .checks-row { display: flex; flex-wrap: wrap; gap: 10px 26px; }
 .editor legend { padding: 0 6px; font-weight: 600; color: var(--navy); font-size: 14px; }
 .editor .field > label { font-family: var(--sans); font-size: 13.5px; font-weight: 600; }
 .editor .input { padding: 9px 12px; font-size: 14.5px; }

@@ -40,7 +40,7 @@ export default function Membership() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section" id="who-can-join">
         <div className="container">
           <h2 className="rule">Who Can Join?</h2>
           <div className="card">
@@ -50,7 +50,7 @@ export default function Membership() {
         </div>
       </section>
 
-      <section className="section divided">
+      <section className="section divided" id="why-heh">
         <div className="container">
           <h2 className="rule">Membership Benefits</h2>
           <div className="card">

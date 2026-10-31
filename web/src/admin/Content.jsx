@@ -42,16 +42,20 @@ const CONTENT = {
   members: {
     title: 'Members',
     single: 'Member',
-    head: ['Name', 'Membership ID', 'Company', 'Industry', 'Status'],
-    row: (m) => [<><b>{m.full_name}</b><div className="sub">{m.designation}</div></>, m.member_code, m.company, m.industry,
+    head: ['Name', 'Membership ID', 'Company', 'Industry', 'Member type', 'Status'],
+    row: (m, meta) => [<><b>{m.full_name}</b><div className="sub">{m.designation}</div></>, m.member_code, m.company, m.industry,
+      (m.member_types || []).map((k) => (meta?.memberTypes || []).find(([key]) => key === k)?.[1] || k).join(', ') || '—',
       <Pill status={m.status === 'active' ? 'yes' : 'no'} text={label(m.status)} />],
     publicUrl: (m) => `/member?m=${encodeURIComponent(m.slug)}`,
-    defaults: { status: 'active', location: 'Hyderabad, Telangana', offers: [], opportunities: [], collaboration_interests: [], sort_order: 0 },
+    defaults: { status: 'active', location: 'Hyderabad, Telangana', offers: [], opportunities: [], collaboration_interests: [], member_types: [], team_order: 0, sort_order: 0 },
     fields: (meta) => [
       ['full_name', 'Full name *', 'text'], ['member_code', 'HEH Membership ID * (used for event registration)', 'text'],
       ['designation', 'Designation', 'text'], ['company', 'Company', 'text'],
       ['industry', 'Industry', 'select', meta.industries.map((i) => [i, i])], ['location', 'Business location', 'text'],
       ['photo_url', 'Profile photo', 'image'],
+      ['member_types', 'Member type (groups on the About HEH > Members page)', 'checks', meta.memberTypes || []],
+      ['team_role', 'Role on the Members page (e.g. Marketing Head; blank = designation)', 'text'],
+      ['team_order', 'Order on the Members page (1, 2, 3… within the group; 0 = after those)', 'text'],
       ['bio', 'About the entrepreneur', 'textarea'],
       ['experience', 'Experience (short)', 'text'], ['expertise', 'Expertise (short)', 'text'], ['passion', 'Passion (short)', 'text'],
       ['company_tagline', 'Company tagline', 'text'], ['company_image_url', 'Company image / logo', 'image'],
@@ -182,6 +186,18 @@ function FieldInput({ spec: [name, text, type, extra], value, errors, prefix = '
       </select>
     ));
     case 'check': return <label className="check full"><input type="checkbox" name={n} defaultChecked={!!v} /> {text}</label>;
+    case 'checks': return ( // several options, saved as a list of the checked keys
+      <fieldset className="full">
+        <legend>{text}</legend>
+        <div className="checks-row">
+          {extra.map(([key, lab]) => (
+            <label className="check" key={key}>
+              <input type="checkbox" name={n} value={key} data-kind="multi" defaultChecked={(v || []).includes(key)} /> {lab}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    );
     case 'image': return <ImageField id={id} n={n} text={text} value={v} error={error} />;
     case 'lines': return wrap(' full', <textarea className="input" id={id} name={n} data-kind="lines" defaultValue={toLines(v)} />);
     case 'pairs':
@@ -214,6 +230,11 @@ function Editor({ name, item, onSaved }) {
     const body = {};
     for (const el of form.elements) {
       if (!el.name || el.type === 'file') continue;
+      if (el.dataset.kind === 'multi') {
+        body[el.name] = body[el.name] || [];
+        if (el.checked) body[el.name].push(el.value);
+        continue;
+      }
       let val = el.type === 'checkbox' ? el.checked : el.value.trim();
       if (el.dataset.kind === 'lines') val = fromLines(val);
       if (el.dataset.kind === 'rows') val = fromRows(val, el.dataset.keys.split(','));
@@ -267,7 +288,7 @@ function Editor({ name, item, onSaved }) {
 }
 
 export default function Content({ name }) {
-  const { call, toast, openModal, reload } = useAdmin();
+  const { call, toast, openModal, reload, meta } = useAdmin();
   const def = CONTENT[name];
   const state = useLoad(() => call(`/${name}`));
 
@@ -289,7 +310,7 @@ export default function Content({ name }) {
                   <tr key={it.id} className="clickable" onClick={async () => {
                     try { edit(await call(`/${name}/${it.id}`)); } catch (err) { toast(err.message, true); }
                   }}>
-                    {def.row(it).map((c, i) => <td key={i}>{c}</td>)}
+                    {def.row(it, meta).map((c, i) => <td key={i}>{c}</td>)}
                     <td><a href={def.publicUrl(it)} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()}>View</a></td>
                   </tr>
                 )) : (

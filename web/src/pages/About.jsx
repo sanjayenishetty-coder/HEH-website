@@ -8,16 +8,6 @@ const VALUES = [
   ['Community Impact', 'Promoting responsible entrepreneurship and contributing to economic development.'],
 ];
 
-// Core team, from entrepreneurhub.in/team (photos in public/assets/team).
-const TEAM = [
-  ['Sanjay Enishetty', 'Chief Mentor & Advisor', 'sanjay-enishetty'],
-  ['Naresh Kuchi', 'Managing Director', 'naresh-kuchi'],
-  ['Sai Prakash', 'Marketing Head', 'sai-prakash'],
-  ['DVP Sridhar', 'Head – Operations', 'dvp-sridhar'],
-  ['Manjusha M', 'Head – Women’s Win', 'manjusha-m'],
-  ['Jaya Lakshmi', 'Head – Membership Growth', 'jaya-lakshmi'],
-];
-
 export default function About() {
   useTitle('Hyderabad Entrepreneurs Hub | About');
   return (
@@ -60,22 +50,6 @@ export default function About() {
           <span className="eyebrow tracked rule">Our Core Values</span>
           <div className="values-grid">
             {VALUES.map(([title, text]) => <div key={title}><h3>{title}</h3><p>{text}</p></div>)}
-          </div>
-        </div>
-      </section>
-
-      <section className="team">
-        <div className="container">
-          <span className="eyebrow tracked rule">Leadership &amp; Advisory Team</span>
-          <h2>Leadership &amp; Advisory Team</h2>
-          <p>Meet the leadership team, advisers and mentors who run HEH day to day and contribute to the growth and development of the HEH community.</p>
-          <div className="team-grid">
-            {TEAM.map(([name, role, photo]) => (
-              <figure className="team-card" key={name}>
-                <img src={`/assets/team/${photo}.jpg`} alt={name} loading="lazy" />
-                <figcaption><h3>{name}</h3><span>{role}</span></figcaption>
-              </figure>
-            ))}
           </div>
         </div>
       </section>

@@ -55,9 +55,9 @@ export default function Contact() {
         <div className="container">
           <h2 className="title" style={{ marginBottom: 22 }}>Get in Touch</h2>
           <div className="contact-cards">
-            <div className="panel contact-card"><Ic name="mail" /><div><h3>Email Us</h3><p>For membership, business collaborations and general enquiries.</p><a className="big" href="mailto:info@heh.in">info@heh.in</a></div></div>
-            <div className="panel contact-card"><Ic name="phone" /><div><h3>Call Us</h3><p>Speak with our team during business hours.</p><a className="big" href="tel:+919876543210">+91 98765 43210</a></div></div>
-            <div className="panel contact-card"><Ic name="pin" /><div><h3>Our Location</h3><p style={{ fontSize: 15, color: 'var(--ink)' }}>Hyderabad, Telangana<br />India</p></div></div>
+            <div className="panel contact-card"><Ic name="mail" /><div><h3>Email Us</h3><p>For membership, business collaborations and general enquiries. We reply within one business day.</p><a className="big" href="mailto:heh@entrepreneurhub.in">heh@entrepreneurhub.in</a></div></div>
+            <div className="panel contact-card"><Ic name="phone" /><div><h3>Call or WhatsApp</h3><p>Speak with our team during business hours.</p><a className="big" href="tel:+916300799266">+91 63007 99266</a><a className="wa-link" href="https://wa.me/916300799266" target="_blank" rel="noopener">Chat on WhatsApp</a></div></div>
+            <div className="panel contact-card"><Ic name="pin" /><div><h3>Our Location</h3><p style={{ fontSize: 15, color: 'var(--ink)' }}>Plot 115, Ashok Enclave, Netaji Nagar,<br />Secunderabad, Telangana 500062</p></div></div>
           </div>
         </div>
       </section>
@@ -98,10 +98,10 @@ export default function Contact() {
 
           <aside className="panel pad">
             <h2 className="title sm">Our Location</h2>
-            <iframe className="map-frame" style={{ marginTop: 18 }} title="Map of Hyderabad, Telangana" loading="lazy" referrerPolicy="no-referrer-when-downgrade"
-              src="https://www.google.com/maps?q=Hyderabad,+Telangana,+India&z=11&output=embed" />
+            <iframe className="map-frame" style={{ marginTop: 18 }} title="Map of Ashok Enclave, Netaji Nagar, Secunderabad" loading="lazy" referrerPolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps?q=Ashok+Enclave,+Netaji+Nagar,+Secunderabad,+Telangana+500062&z=15&output=embed" />
             <div className="office">
-              <div className="row"><Icon name="building" /><div><h3>Visit Our Office</h3><p>Hyderabad, Telangana<br />India</p></div></div>
+              <div className="row"><Icon name="building" /><div><h3>Visit Our Office</h3><p>Hyderabad Entrepreneurs Hub Pvt Ltd<br />Plot 115, Ashok Enclave, Netaji Nagar,<br />Secunderabad, Telangana 500062</p></div></div>
               <div className="row"><Icon name="clock" /><div><h3>Business Hours</h3><p>Monday - Saturday<br />9:00 AM - 6:00 PM</p></div></div>
             </div>
           </aside>

@@ -7,7 +7,7 @@ export default function Login({ onSignedIn }) {
   const [formError, setFormError] = useState('');
   const [busy, setBusy] = useState(false);
   const password = useRef();
-  useEffect(() => password.current?.focus(), []);
+  useEffect(() => { password.current?.focus(); }, []);
 
   async function submit(e) {
     e.preventDefault();

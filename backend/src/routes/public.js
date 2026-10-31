@@ -23,7 +23,7 @@ const submitLimiter = rateLimit({
 // Fields the public site may see. Never select email/phone of members here.
 const EVENT_LIST_COLS = `id, slug, title, category, short_description, event_date, start_time, end_time,
   venue_name, image_url, members_only, registration_open`;
-const MEMBER_CARD_COLS = `id, slug, full_name, designation, company, industry, location, photo_url`;
+const MEMBER_CARD_COLS = `id, slug, full_name, designation, company, industry, location, photo_url, member_types, team_role, team_order`;
 const MEMBER_PROFILE_COLS = `${MEMBER_CARD_COLS}, company_image_url, company_tagline, bio, experience, expertise,
   passion, company_about, products_services, website, offers, opportunities, collaboration_interests`;
 const STORY_CARD_COLS = `id, slug, title, category, summary, image_url, members_involved, companies,
@@ -45,6 +45,7 @@ router.get('/meta', (req, res) => {
     turnoverRanges: C.turnoverRanges,
     enquiryTypes: C.enquiryTypes,
     storyCategories: C.storyCategories,
+    memberTypes: C.memberTypes,
   });
 });
 

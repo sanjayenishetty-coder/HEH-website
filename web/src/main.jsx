@@ -19,6 +19,12 @@ import Members from './pages/Members.jsx';
 import Member from './pages/Member.jsx';
 import SuccessStories from './pages/SuccessStories.jsx';
 import Story from './pages/Story.jsx';
+import Faqs from './pages/Faqs.jsx';
+import OurMembers from './pages/OurMembers.jsx';
+import WhyHeh from './pages/WhyHeh.jsx';
+import WhoCanJoin from './pages/WhoCanJoin.jsx';
+import MemberVoices from './pages/MemberVoices.jsx';
+import MembershipPlan from './pages/MembershipPlan.jsx';
 import NotFound from './pages/NotFound.jsx';
 
 // The admin panel is its own bundle, loaded only at /admin/.
@@ -53,6 +59,12 @@ function App() {
         <Route path="member" element={<Member />} />
         <Route path="success-stories" element={<SuccessStories />} />
         <Route path="story" element={<Story />} />
+        <Route path="faqs" element={<Faqs />} />
+        <Route path="our-members" element={<OurMembers />} />
+        <Route path="why-heh" element={<WhyHeh />} />
+        <Route path="who-can-join" element={<WhoCanJoin />} />
+        <Route path="member-voices" element={<MemberVoices />} />
+        <Route path="membership-plan" element={<MembershipPlan />} />
         <Route path="*" element={<NotFoundOrOld />} />
       </Route>
     </Routes>
