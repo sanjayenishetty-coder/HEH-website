@@ -1,0 +1,311 @@
+/* Shared header, footer, icons and small helpers for every HEH page.
+   Pages mark the active nav link with <body data-nav="home|about|membership|events|community|contact">. */
+(function () {
+  'use strict';
+
+  // ---------- Icon sprite (24x24 line icons, use with <svg class="i"><use href="#i-name"/></svg>) ----------
+  const ICONS = {
+    'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    'arrow-left': '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+    'arrow-down': '<path d="M12 5v14M6 13l6 6 6-6"/>',
+    'chevron-right': '<path d="M9 6l6 6-6 6"/>',
+    'chevron-down': '<path d="M6 9l6 6 6-6"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+    'check-circle': '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>',
+    users: '<circle cx="12" cy="7.5" r="3"/><path d="M6.5 19.5c0-3.3 2.4-5.5 5.5-5.5s5.5 2.2 5.5 5.5"/><circle cx="5" cy="9.5" r="2.2"/><path d="M1.5 18.5c0-2.5 1.5-4.2 3.6-4.4"/><circle cx="19" cy="9.5" r="2.2"/><path d="M22.5 18.5c0-2.5-1.5-4.2-3.6-4.4"/>',
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 20.5c0-4.2 3.6-6.8 8-6.8s8 2.6 8 6.8"/>',
+    handshake: '<path d="M2 10.5L5.5 7l3.5 1.2L12 6.5l3.5 1.7L18.5 7 22 10.5"/><path d="M5.5 7L2 10.5l7 7.2 1.6-1.1 1.4 1.4 1.6-1.1 1.4 1.1 1.6-1.4 4.4-5.6"/><path d="M12 6.5l-3.6 3.8a1.5 1.5 0 0 0 2.1 2.1l2.2-2 4.8 4.4"/>',
+    bulb: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2v.5h5V16c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/>',
+    chart: '<path d="M4 20h16"/><path d="M7 17v-4M11 17v-7M15 17v-5M19 17V7"/><path d="M5 10l5-4 4 3 6-5"/>',
+    'chart-line': '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M3 13h18"/>',
+    store: '<path d="M4 10v10h16V10"/><path d="M3 7l1.6-3.5h14.8L21 7v1a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/><path d="M10 20v-5h4v5"/>',
+    rocket: '<path d="M5 15c-1.5 1.5-2 4.5-2 6 1.5 0 4.5-.5 6-2"/><path d="M9 15l-3-3c1.2-4.6 5.4-9 13-9 0 7.6-4.4 11.8-9 13z"/><circle cx="15" cy="9" r="1.6"/>',
+    'file-edit': '<path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M13 3l6 6M13 3v6h6M8 13h5M8 17h3"/><path d="M19.5 13.5l2 2-5.5 5.5H14v-2z"/>',
+    file: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+    flag: '<path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7.5 14h.01M12 14h.01M16.5 14h.01M7.5 17.5h.01M12 17.5h.01M16.5 17.5h.01"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+    mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+    phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+    linkedin: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 10.5V17M8 7.2v.01M12 17v-6.5M12 13.5a2.5 2.5 0 0 1 5 0V17"/>',
+    instagram: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><path d="M17.5 6.5v.01"/>',
+    image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 16l-5-5-10 9"/>',
+    building: '<path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16M15 9h4a1 1 0 0 1 1 1v11M2 21h20M8 8h3M8 12h3M8 16h3"/>',
+    tag: '<path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z"/><path d="M7.5 7.5v.01"/>',
+    star: '<path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3l-5.5 2.9 1-6.2L3 9.6l6.2-.9z"/>',
+    chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
+    shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/>',
+    edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/>',
+    laptop: '<rect x="4" y="5" width="16" height="11" rx="1"/><path d="M2 19h20"/>',
+    gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+    heart: '<path d="M12 20s-8-4.6-8-10.5A4.5 4.5 0 0 1 12 7a4.5 4.5 0 0 1 8 2.5C20 15.4 12 20 12 20z"/><path d="M6.5 12h3l1.2-2.2 2 4.2 1.2-2h3.6"/>',
+    cart: '<path d="M3 4h2l2.5 11h11L21 7H6.4"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="18" cy="19.5" r="1.3"/>',
+    cap: '<path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5M22 9v5"/>',
+    car: '<path d="M3 17v-4l2.2-5.5A2 2 0 0 1 7 6h10a2 2 0 0 1 1.8 1.5L21 13v4z"/><path d="M3 13h18M7 17v2M17 17v2"/><circle cx="7.5" cy="15" r=".6"/><circle cx="16.5" cy="15" r=".6"/>',
+    cloche: '<path d="M4 17h16M5 17a7 7 0 0 1 14 0M12 8V6M10 6h4M3 20h18"/>',
+    grid: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
+    cloud: '<path d="M7 18a4.5 4.5 0 0 1-.6-9A6 6 0 0 1 18 8.6a4.8 4.8 0 0 1-1 9.4z"/>',
+    target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    ticket: '<path d="M3 7h18v3a2 2 0 0 0 0 4v3H3v-3a2 2 0 0 0 0-4z"/><path d="M14 7v10" stroke-dasharray="2 2"/>',
+    external: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+    upload: '<path d="M12 16V4M6 10l6-6 6 6M4 20h16"/>',
+    logout: '<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',
+  };
+
+  // Solid versions used inside the round icon badges (.ic), matching the filled glyphs in the designs.
+  const FILLED = {
+    users: '<circle cx="12" cy="7.3" r="3.4"/><path d="M5.6 20c0-3.9 2.8-6.6 6.4-6.6s6.4 2.7 6.4 6.6z"/><circle cx="4.9" cy="9.4" r="2.4"/><path d="M.6 18.6c0-2.8 1.8-4.7 4.3-4.7.9 0 1.7.2 2.3.6-1.3 1.2-2.1 2.6-2.3 4.1z"/><circle cx="19.1" cy="9.4" r="2.4"/><path d="M23.4 18.6c0-2.8-1.8-4.7-4.3-4.7-.9 0-1.7.2-2.3.6 1.3 1.2 2.1 2.6 2.3 4.1z"/>',
+    user: '<circle cx="12" cy="7.5" r="4.2"/><path d="M3.8 21c0-4.6 3.7-7.6 8.2-7.6s8.2 3 8.2 7.6z"/>',
+    briefcase: '<path fill-rule="evenodd" d="M9 3.5h6A2 2 0 0 1 17 5.5V7h3a2 2 0 0 1 2 2v3.5H2V9a2 2 0 0 1 2-2h3V5.5a2 2 0 0 1 2-2zm0 2V7h6V5.5z"/><path d="M2 14h8.5v1.6h3V14H22v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z"/>',
+    store: '<path d="M3.6 3h16.8l1.6 5.2a3 3 0 0 1-5 2.1 3.1 3.1 0 0 1-5 0 3.1 3.1 0 0 1-5 0 3 3 0 0 1-5-2.1z"/><path d="M4 12.4V21h6v-5h4v5h6v-8.6a4.5 4.5 0 0 1-3-.7 5 5 0 0 1-5 0 5 5 0 0 1-5 0 4.5 4.5 0 0 1-3 .7z"/>',
+    rocket: '<path d="M21 3c-5.4 0-10 2.6-12.6 7.8l4.8 4.8C18.4 13 21 8.4 21 3z"/><path d="M8 10.9 3.4 11.5 1.8 15l4.3-.6zM13.1 16l-.6 4.6-3.5 1.6.6-4.3z"/><path d="M6.6 15.4c-2.1.4-3.2 2.6-3.6 5.6 3-.4 5.2-1.5 5.6-3.6z"/><circle cx="15.2" cy="8.8" r="1.7" fill="#fff"/>',
+    chart: '<rect x="3" y="14" width="3.2" height="7" rx=".6"/><rect x="8.2" y="11" width="3.2" height="10" rx=".6"/><rect x="13.4" y="12.5" width="3.2" height="8.5" rx=".6"/><rect x="18.6" y="7.5" width="3.2" height="13.5" rx=".6"/><path d="M3.5 9.5l5-4 4 2.8L20 2.8M16.5 2.5H20V6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    handshake: '<path d="M.8 9.6 5 5.8l3.4 1.4-3.9 4.6z"/><path d="M23.2 9.6 19 5.8l-3.4 1.4 3.9 4.6z"/><path d="M8.6 7.5 12 6.1l3.6 1.5 2.9 4.4-1.1 1.6-5.3-4.5-2.7 2.4a1.7 1.7 0 0 1-2.4-2.4z"/><path d="M5.6 12.4 6.9 11a2.9 2.9 0 0 0 4 .1l1.1-1 4.6 3.9a1.3 1.3 0 0 1-1.7 2.1l-.6-.5a1.3 1.3 0 0 1-1.8 1.7l-.6-.5a1.3 1.3 0 0 1-1.9 1.5 1.3 1.3 0 0 1-2 .5z"/>',
+    flag: '<rect x="4.2" y="2.5" width="2" height="19.5" rx="1"/><path d="M7 3.5h12.5l-3 4.7 3 4.8H7z"/>',
+    building: '<path fill-rule="evenodd" d="M4 3.5A1.5 1.5 0 0 1 5.5 2h9A1.5 1.5 0 0 1 16 3.5V20h-3v-3.5H7V20H4zM7 6h2v2H7zm4 0h2v2h-2zM7 10h2v2H7zm4 0h2v2h-2z"/><path d="M17 8h2.5A1.5 1.5 0 0 1 21 9.5V20h-4z"/><rect x="2" y="20" width="20" height="2" rx="1"/>',
+    pin: '<path fill-rule="evenodd" d="M12 1.8a7.6 7.6 0 0 0-7.6 7.6c0 5.6 7.6 12.8 7.6 12.8s7.6-7.2 7.6-12.8A7.6 7.6 0 0 0 12 1.8zm0 4.7a2.9 2.9 0 1 1 0 5.8 2.9 2.9 0 0 1 0-5.8z"/>',
+    heart: '<path d="M12 21s-9-5.1-9-11.5A5 5 0 0 1 12 6.7a5 5 0 0 1 9 2.8C21 15.9 12 21 12 21z"/><path d="M5.5 12h3.2l1.3-2.4 2.2 4.6 1.3-2.2H18.5" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    cart: '<path d="M2.5 3h2.6l.6 2.8H21l-2.4 9.4H7.7L5.1 4.4"/><path d="M6 6h15l-2.4 9.2H8z"/><circle cx="9" cy="19.5" r="1.8"/><circle cx="17.5" cy="19.5" r="1.8"/>',
+    cap: '<path d="M1 9l11-5.5L23 9l-11 5.5z"/><path d="M5.5 12.2V16c3.6 3 9.4 3 13 0v-3.8L12 15.5z"/><rect x="21" y="9" width="1.8" height="6" rx=".9"/>',
+    grid: '<rect x="3" y="3" width="8" height="8" rx="4"/><rect x="13" y="3" width="8" height="8" rx="4"/><rect x="3" y="13" width="8" height="8" rx="4"/><rect x="13" y="13" width="8" height="8" rx="4"/>',
+    gear: '<path fill-rule="evenodd" d="M10.3 1.5h3.4l.5 2.7 1.8.8 2.3-1.6 2.4 2.4-1.6 2.3.8 1.8 2.7.5v3.4l-2.7.5-.8 1.8 1.6 2.3-2.4 2.4-2.3-1.6-1.8.8-.5 2.7h-3.4l-.5-2.7-1.8-.8-2.3 1.6-2.4-2.4 1.6-2.3-.8-1.8-2.7-.5v-3.4l2.7-.5.8-1.8-1.6-2.3 2.4-2.4 2.3 1.6 1.8-.8zM12 8.3a3.7 3.7 0 1 0 0 7.4 3.7 3.7 0 0 0 0-7.4z"/>',
+    laptop: '<rect x="4" y="4" width="16" height="11.5" rx="1.5"/><path d="M1.5 17.5h21a2 2 0 0 1-2 2h-17a2 2 0 0 1-2-2z"/>',
+    car: '<path d="M5.4 6.4A2 2 0 0 1 7.3 5h9.4a2 2 0 0 1 1.9 1.4L20 11H4z"/><path fill-rule="evenodd" d="M3 12h18a1 1 0 0 1 1 1v5H2v-5a1 1 0 0 1 1-1zm3.5 2.2a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6zm11 0a1.3 1.3 0 1 0 0 2.6 1.3 1.3 0 0 0 0-2.6z"/><rect x="4" y="18" width="3" height="2.5" rx="1"/><rect x="17" y="18" width="3" height="2.5" rx="1"/>',
+    cloche: '<path d="M3 16.5a9 9 0 0 1 18 0z"/><rect x="2" y="17.5" width="20" height="2.2" rx="1.1"/><rect x="10" y="4" width="4" height="2" rx="1"/><rect x="11.2" y="5.5" width="1.6" height="2.5"/>',
+    shield: '<path fill-rule="evenodd" d="M12 2 20.5 5.2v6.3c0 5.2-3.6 8.8-8.5 10.5C7.1 20.3 3.5 16.7 3.5 11.5V5.2zm3.8 6.6-5 5-2.6-2.6-1.4 1.4 4 4 6.4-6.4z"/>',
+    lock: '<path fill-rule="evenodd" d="M7 10V7a5 5 0 0 1 10 0v3h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2zm2 0h6V7a3 3 0 0 0-6 0z"/>',
+    mail: '<path d="M2 6.5A2.5 2.5 0 0 1 4.5 4h15A2.5 2.5 0 0 1 22 6.5v.3l-10 6.4L2 6.8z"/><path d="M2 9.2l10 6.4 10-6.4v8.3a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 2 17.5z"/>',
+    phone: '<path d="M6.6 2.5h3.2l1.8 4.9-2.3 1.7a12.3 12.3 0 0 0 5.6 5.6l1.7-2.3 4.9 1.8v3.2a2.6 2.6 0 0 1-2.6 2.6A17.6 17.6 0 0 1 4 5.1a2.6 2.6 0 0 1 2.6-2.6z"/>',
+  };
+
+  const sprite = `<svg xmlns="http://www.w3.org/2000/svg" style="display:none">${Object.entries(FILLED)
+    .map(([k, v]) => `<symbol id="i-${k}-f" viewBox="0 0 24 24">${v}</symbol>`)
+    .join('')}${Object.entries(ICONS)
+    .map(([k, v]) => `<symbol id="i-${k}" viewBox="0 0 24 24">${v}</symbol>`)
+    .join('')}</svg>`;
+  document.body.insertAdjacentHTML('afterbegin', sprite);
+
+  const icon = (name, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+  // Icons inside round badges (.ic) use the solid version when one exists.
+  const solidify = (root) =>
+    root.querySelectorAll('.ic svg.i:not(.f) use, .solid svg.i:not(.f) use').forEach((u) => {
+      const name = (u.getAttribute('href') || '').replace('#i-', '');
+      if (!FILLED[name]) return;
+      u.setAttribute('href', `#i-${name}-f`);
+      u.parentNode.classList.add('f');
+    });
+  // Static markup writes <i data-i="users"></i>; swap those for the SVG.
+  const swapIcons = (root = document) => {
+    root.querySelectorAll('i[data-i]').forEach((el) => (el.outerHTML = icon(el.dataset.i, el.className)));
+    solidify(root);
+  };
+  // Content rendered later from the API gets the same treatment.
+  new MutationObserver((list) => {
+    for (const m of list) for (const n of m.addedNodes) if (n.nodeType === 1) solidify(n.parentNode || n);
+  }).observe(document.body, { childList: true, subtree: true });
+
+  // ---------- Header & footer ----------
+  const LOGO_MARK =
+    '<svg viewBox="0 0 52 42" aria-hidden="true"><path d="M4 8 L18 4 V38 L4 34Z" fill="#0d2a4f"/><path d="M20 6 L32 8 V36 L20 38Z" fill="#f5a623"/><path d="M34 8 L48 4 V34 L34 38Z" fill="#0d2a4f"/><path d="M22 8 L30 9 V35 L22 36Z" fill="#f26a1b"/></svg>';
+  const LOGO_MARK_LIGHT = LOGO_MARK.replace(/#0d2a4f/g, '#ffffff');
+  const logo = (light) =>
+    `<a class="logo" href="index.html" aria-label="Hyderabad Entrepreneurs Hub home"><span class="logo-text"><span class="top">HYDERABAD</span><span class="bottom">entrepreneur<b>Hub</b></span></span>${light ? LOGO_MARK_LIGHT : LOGO_MARK}</a>`;
+
+  const NAV = [
+    ['home', 'index.html', 'Home'],
+    ['about', 'about.html', 'About HEH'],
+    ['membership', 'membership.html', 'Membership'],
+    ['events', 'events.html', 'Events'],
+    ['community', 'community.html', 'Our Community'],
+    ['contact', 'contact.html', 'Contact Us'],
+  ];
+  const current = document.body.dataset.nav;
+
+  const header = document.querySelector('.site-header');
+  if (header) {
+    header.innerHTML = `<div class="container">${logo(false)}
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
+      <nav class="nav">${NAV.map(([k, href, label]) => `<a${k === current ? ' class="active" aria-current="page"' : ''} href="${href}">${label}</a>`).join('')}</nav>
+      <a class="btn btn-primary btn-sm header-cta" href="membership-apply.html">Become a Member ${icon('arrow-right')}</a></div>`;
+    const toggle = header.querySelector('.menu-toggle');
+    const nav = header.querySelector('.nav');
+    const setMenu = (open) => {
+      nav.classList.toggle('open', open);
+      toggle.setAttribute('aria-expanded', open);
+      toggle.textContent = open ? '✕' : '☰';
+    };
+    toggle.addEventListener('click', () => setMenu(!nav.classList.contains('open')));
+    nav.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
+  }
+
+  const footer = document.querySelector('.site-footer');
+  if (footer) {
+    footer.innerHTML = `<div class="container cols">
+        <div>${logo(true)}<p>Hyderabad Entrepreneurs Hub (HEH) brings together entrepreneurs, SME business owners, start-up founders and business leaders to build meaningful relationships, share knowledge and explore business opportunities.</p></div>
+        <div><h4>Quick Links</h4><ul>${NAV.map(([, href, label]) => `<li><a href="${href}">${label === 'About HEH' ? 'About HEH' : label}</a></li>`).join('')}</ul></div>
+        <div><h4>Connect With Us</h4><ul class="social">
+          <li><a href="mailto:info@heh.in">${icon('mail')} info@heh.in</a></li>
+          <li><a href="#" rel="noopener">${icon('linkedin')} Follow us on LinkedIn</a></li>
+          <li><a href="#" rel="noopener">${icon('instagram')} Follow us on Instagram</a></li></ul></div>
+        <div><h4>Be Part of HEH</h4><p style="margin-top:0">Join a growing community of ambitious entrepreneurs.</p>
+          <a class="btn btn-primary" href="membership-apply.html">Become a Member ${icon('arrow-right')}</a></div>
+      </div>
+      <div class="legal"><div class="container"><span>© ${new Date().getFullYear()} Hyderabad Entrepreneurs Hub. All rights reserved.</span><span>Hyderabad, Telangana, India</span></div></div>`;
+  }
+
+  // ---------- Helpers ----------
+  const esc = (v) =>
+    String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const parseDate = (d) => {
+    const [y, m, day] = String(d).slice(0, 10).split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, day));
+  };
+  const fmt = {
+    date(d) { // 14 Nov 2026
+      if (!d) return 'Date will be updated';
+      const x = parseDate(d);
+      return `${String(x.getUTCDate()).padStart(2, '0')} ${MONTHS[x.getUTCMonth()]} ${x.getUTCFullYear()}`;
+    },
+    weekday(d) { return d ? DAYS[parseDate(d).getUTCDay()] : ''; },
+    shortDay(d) { return d ? DAYS[parseDate(d).getUTCDay()].slice(0, 3) : ''; },
+    time(t) { // 10:00 AM
+      if (!t) return '';
+      const [h, m] = t.split(':').map(Number);
+      return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+    },
+    timeRange(a, b) {
+      if (!a) return 'Time will be updated';
+      return b ? `${fmt.time(a)} – ${fmt.time(b)}` : fmt.time(a);
+    },
+    stamp(ts) { // 29 Oct 2026, 04:15 PM (India time)
+      const d = new Date(ts);
+      const parts = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true,
+      }).formatToParts(d).reduce((o, p) => ((o[p.type] = p.value), o), {});
+      return `${parts.day} ${parts.month} ${parts.year}, ${parts.hour}:${parts.minute} ${String(parts.dayPeriod).toUpperCase()}`;
+    },
+  };
+
+  async function api(path, opts = {}) {
+    const res = await fetch(`/api${path}`, {
+      method: opts.method || 'GET',
+      headers: opts.body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
+      credentials: 'same-origin',
+    });
+    let data = null;
+    try { data = await res.json(); } catch { /* empty */ }
+    if (!res.ok) {
+      const err = new Error((data && data.error) || `Request failed (${res.status})`);
+      err.status = res.status;
+      err.errors = data && data.errors;
+      throw err;
+    }
+    return data;
+  }
+
+  const param = (name) => new URLSearchParams(location.search).get(name);
+
+  // Image or grey placeholder (matches the "image will be uploaded here" boxes in the designs).
+  function media(url, { label = '', iconName = 'image', cls = '' } = {}) {
+    if (url) return `<div class="ph has-img ${cls}"><img src="${esc(url)}" alt="${esc(label)}" loading="lazy"></div>`;
+    return `<div class="ph ${cls}">${icon(iconName)}${label ? `<span>${esc(label)}</span>` : ''}</div>`;
+  }
+
+  const CATEGORY_BADGE = {
+    'Business Collaboration': '', 'Business Referral': 'blue', 'Growth Story': 'green',
+    'Community Impact': 'purple', 'New Business Opportunity': '', 'Knowledge Sharing': '',
+  };
+  const INDUSTRY_STYLE = {
+    'Technology & IT Services': ['blue', 'laptop'],
+    Manufacturing: ['', 'gear'],
+    'Real Estate & Construction': ['purple', 'building'],
+    Healthcare: ['green', 'heart'],
+    'Financial & Professional Services': ['', 'chart'],
+    'Retail & Trading': ['', 'cart'],
+    'Education & Training': ['blue', 'cap'],
+    'Automobile & Allied Services': ['blue', 'car'],
+    'Hospitality & Food Services': ['', 'cloche'],
+    'Other Services': ['purple', 'grid'],
+  };
+  const industryBadge = (ind) => {
+    const tone = { 'Technology & IT Services': 'blue', 'Real Estate & Construction': '', Healthcare: 'green', 'Financial & Professional Services': 'purple' }[ind];
+    return `<span class="badge ${tone ?? 'grey'}">${esc(ind)}</span>`;
+  };
+  const eventBadge = (cat) =>
+    cat === 'workshop' ? '<span class="badge caps blue">HEH Workshop</span>' : '<span class="badge caps">HEH Spotlight</span>';
+
+  // ---------- Form helpers ----------
+  function formData(form) {
+    const out = {};
+    for (const el of form.elements) {
+      if (!el.name) continue;
+      out[el.name] = el.type === 'checkbox' ? el.checked : el.value.trim();
+    }
+    return out;
+  }
+
+  function clearErrors(form) {
+    form.querySelectorAll('.err').forEach((e) => e.remove());
+    form.querySelectorAll('.invalid').forEach((e) => e.classList.remove('invalid'));
+    const box = form.querySelector('.form-error');
+    if (box) box.hidden = true;
+  }
+
+  function showErrors(form, err) {
+    clearErrors(form);
+    const errors = err.errors || {};
+    let first = null;
+    for (const [name, msg] of Object.entries(errors)) {
+      const el = form.elements[name];
+      if (!el) continue;
+      const holder = el.closest('.field') || el.closest('.check');
+      if (!holder) continue;
+      holder.classList.add('invalid');
+      holder.insertAdjacentHTML('beforeend', `<span class="err">${esc(msg)}</span>`);
+      first = first || el;
+    }
+    const box = form.querySelector('.form-error');
+    if (box && (!first || !Object.keys(errors).length)) {
+      box.textContent = err.message;
+      box.hidden = false;
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    if (first) first.focus();
+  }
+
+  // Character counters: <textarea data-count> + <span class="counter">
+  function bindCounters(root = document) {
+    root.querySelectorAll('textarea[maxlength]').forEach((ta) => {
+      const c = ta.parentElement.querySelector('.counter');
+      if (!c) return;
+      const update = () => (c.textContent = `${ta.value.length} / ${ta.maxLength}`);
+      ta.addEventListener('input', update);
+      update();
+    });
+  }
+
+  function fillSelect(select, options, placeholder) {
+    select.innerHTML = `<option value="">${esc(placeholder)}</option>` + options.map((o) => `<option>${esc(o)}</option>`).join('');
+  }
+
+  let metaPromise;
+  const meta = () => (metaPromise = metaPromise || api('/meta'));
+
+  swapIcons();
+
+  window.HEH = { swapIcons, icon, esc, fmt, api, param, media, eventBadge, industryBadge, CATEGORY_BADGE, INDUSTRY_STYLE, formData, clearErrors, showErrors, bindCounters, fillSelect, meta };
+})();

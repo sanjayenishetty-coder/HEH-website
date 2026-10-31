@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Enquiry Received | Hyderabad Entrepreneurs Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261031b">
+</head>
+<body data-nav="contact">
+  <header class="site-header"></header>
+
+  <main>
+    <section class="page-hero center" style="padding-bottom:36px">
+      <div class="container">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><i data-i="chevron-right"></i><a href="contact.html">Contact Us</a><i data-i="chevron-right"></i><span>Enquiry Confirmation</span></nav>
+        <div class="success-mark" style="margin-top:24px"><i data-i="check"></i><span class="ray"></span><span class="ray"></span><span class="ray"></span><span class="ray"></span><span class="ray"></span><span class="ray"></span></div>
+        <h1>Thank You for<br>Reaching Out!</h1>
+        <p class="lead" data-lead>Your enquiry has been successfully submitted to Hyderabad Entrepreneurs Hub.</p>
+        <p class="muted" style="margin-top:12px">Our team will review your message and get back to you.</p>
+      </div>
+    </section>
+
+    <section class="section tight">
+      <div class="container">
+        <div class="panel pad">
+          <h2 class="title sm" style="margin-bottom:20px">Your Enquiry Details</h2>
+          <div class="dtable" data-details><div class="loading">Loading your enquiry…</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section tight">
+      <div class="container">
+        <h2 class="title sm">What Happens Next?</h2>
+        <div class="next-steps">
+          <div class="next-step"><span class="badge-ic"><b>01</b><i data-i="file-edit"></i></span><h3>Enquiry Received</h3><p>Your enquiry has been successfully submitted.</p></div>
+          <i data-i="chevron-right" class="chev"></i>
+          <div class="next-step warm"><span class="badge-ic"><b>02</b><i data-i="users"></i></span><h3>HEH Team Reviews</h3><p>Our team will review your message.</p></div>
+          <i data-i="chevron-right" class="chev"></i>
+          <div class="next-step green"><span class="badge-ic"><b>03</b><i data-i="phone"></i></span><h3>Team Gets in Touch</h3><p>We will get back to you soon.</p></div>
+        </div>
+        <div class="btn-row center" style="margin:34px 0 20px">
+          <a class="btn btn-primary" href="index.html" style="min-width:230px">Back to Home <i data-i="arrow-right"></i></a>
+          <a class="btn btn-outline" href="membership.html" style="min-width:260px">Explore HEH Membership</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"></footer>
+  <script src="js/site.js?v=20261031b"></script>
+  <script>
+    (async () => {
+      const { api, esc, fmt, param, icon } = HEH;
+      const box = document.querySelector('[data-details]');
+      const STATUS = { received: 'Received', in_progress: 'In Progress', closed: 'Closed' };
+      try {
+        const q = await api(`/enquiries/${encodeURIComponent(param('ref') || '')}?t=${encodeURIComponent(param('t') || '')}`);
+        if (q.member_name) document.querySelector('[data-lead]').textContent = `Your enquiry for ${q.member_name} has been sent to Hyderabad Entrepreneurs Hub.`;
+        const row = (ic, tone, k, v) => `<div class="row"><span class="ic ${tone}">${icon(ic)}</span><span class="k">${k}</span><span class="v">${v}</span></div>`;
+        box.innerHTML =
+          row('file', '', 'Enquiry Reference', esc(q.ref)) +
+          row('user', 'blue', 'Full Name', esc(q.full_name)) +
+          row('building', 'purple', 'Company Name', esc(q.company) || '—') +
+          row('chat', '', 'Enquiry Type', esc(q.enquiry_type)) +
+          row('calendar', 'blue', 'Submitted On', esc(fmt.stamp(q.created_at))) +
+          row('star', 'green', 'Status', `<span class="badge green lg">${STATUS[q.status] || esc(q.status)}</span>`);
+      } catch {
+        box.innerHTML = '<div class="empty" style="border:0">We could not find this enquiry. If you sent one, our team has received it and will get back to you.</div>';
+      }
+    })();
+  </script>
+</body>
+</html>

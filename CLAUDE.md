@@ -1,27 +1,30 @@
 # CLAUDE.md
 
-Static marketing site for Hyderabad Entrepreneurs Hub (HEH). See README.md for structure, local run and deploy details.
+Website + API for Hyderabad Entrepreneurs Hub (HEH). See README.md for structure, local run and deploy details.
 
 ## Key facts
 
-- `htmls/` is the site and the only thing deployed. `images/` holds the original design screenshots; match them when changing layout or copy.
-- Plain HTML + one shared `htmls/styles.css`. No build, no JS framework. Keep it that way unless asked.
-- Header/nav is duplicated in `index.html`, `about.html`, `membership.html`; edit all three together and keep `class="active"` on the current page's link.
+- `htmls/` is the website (static HTML/CSS/vanilla JS, no build, no framework). `backend/` is a small Node/Express API on PostgreSQL. Keep both framework-free unless asked.
+- `images/` (and `images/Website/`) hold the design screenshots; match them when changing layout or copy.
+- Header, footer and icons come from `htmls/js/site.js`; pages set the active nav with `<body data-nav="...">`. Don't paste header/footer markup into pages.
 - Use the CSS variables in `:root` of `styles.css` for colours/fonts rather than new hex values.
 - Pages must work at phone width (breakpoints at 1080px, 860px, 520px in `styles.css`).
+- Dynamic content (events, members, stories) is managed in `/admin/`; `backend/src/seed.js` only holds sample content.
+- Form option lists (industries, turnover ranges, enquiry types, story categories) live in `backend/src/constants.js` and are served by `GET /api/meta`.
 
 ## Verifying changes
 
-Screenshot pages with headless Edge before reporting done (Edge enforces ~500px min window width; for phone width, render the page inside a 390px iframe):
+Run the API locally with `SERVE_STATIC=1` (see README) so pages can call `/api`. Screenshot pages with headless Edge before reporting done (Edge enforces ~500px min window width; for phone width, render the page inside a 390px iframe served from the same origin, because the API sends `X-Frame-Options: SAMEORIGIN`):
 
 ```powershell
-& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --headless=new --disable-gpu --hide-scrollbars --window-size=1600,900 --screenshot=<scratchpad>\index.png "file:///E:/Personal/vishnu/projects/heh/heh/htmls/index.html"
+& "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --headless=new --disable-gpu --hide-scrollbars --window-size=1600,900 --virtual-time-budget=5000 --screenshot=<scratchpad>\index.png "http://localhost:1502/index.html"
 ```
 
 ## Deploying
 
 - Server `root@169.58.149.137`, key `E:\Personal\vishnu\projects\servers\kvgc_key_pair.pem`, use `ssh -o BatchMode=yes`.
-- Upload: `scp -i <key> -r htmls/* root@169.58.149.137:/srv/heh/prod/frontend/` — content changes need no nginx reload.
-- Served on port 1501 (`/etc/nginx/sites-available/heh-prod`) and https://heh.visuprojects.in (`heh-domain`, certbot-managed SSL).
-- **Shared production server.** Do not modify other projects' files, nginx configs, ports or firewall rules. Run `nginx -t` before any reload. Ask the user before changes outside `/srv/heh` and the `heh-*` nginx files.
-- After deploying, check `https://heh.visuprojects.in/`, `/about`, `/membership` return 200. If local DNS fails, use `curl --resolve heh.visuprojects.in:443:169.58.149.137`.
+- Frontend: `scp -i <key> -r htmls/* root@169.58.149.137:/srv/heh/prod/frontend/` — no reload needed.
+- API: `/srv/heh/prod/backend`, `systemctl restart heh-api` after backend changes; DB `heh_test` (PostgreSQL 16).
+- Served on port 1501 (`/etc/nginx/sites-available/heh-prod`) and https://heh.visuprojects.in (`heh-domain`, certbot-managed SSL); both proxy `/api/` to 127.0.0.1:1502.
+- **Shared production server.** Do not modify other projects' files, services, databases, nginx configs, ports or firewall rules. Run `nginx -t` before any reload. Ask the user before changes outside `/srv/heh`, `heh-api.service`, `heh_test` and the `heh-*` nginx files.
+- After deploying, check `https://heh.visuprojects.in/`, `/about`, `/membership`, `/events`, `/community`, `/contact`, `/admin/` return 200 and `/api/health` returns `{"ok":true}`. If local DNS fails, use `curl --resolve heh.visuprojects.in:443:169.58.149.137`.

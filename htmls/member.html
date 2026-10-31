@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Member Profile | Hyderabad Entrepreneurs Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261031b">
+</head>
+<body data-nav="community">
+  <header class="site-header"></header>
+  <main data-member><div class="container loading" style="padding:120px 0">Loading profile…</div></main>
+
+  <div class="modal" data-modal hidden>
+    <form class="box" id="member-enquiry" novalidate>
+      <button class="close" type="button" data-close aria-label="Close">×</button>
+      <h2 class="title sm" data-modal-title>Send Enquiry</h2>
+      <p style="margin:12px 0 20px;font-size:15px">Your enquiry will be shared with the member through HEH. Personal contact details are not shared publicly.</p>
+      <div class="form-grid">
+        <div class="field"><label for="m_full_name">Full Name <span class="req">*</span></label><input class="input" id="m_full_name" name="full_name" maxlength="120" autocomplete="name"></div>
+        <div class="field"><label for="m_mobile">Mobile Number <span class="req">*</span></label><input class="input" id="m_mobile" name="mobile" type="tel" maxlength="16" autocomplete="tel"></div>
+        <div class="field"><label for="m_email">Email Address <span class="req">*</span></label><input class="input" id="m_email" name="email" type="email" maxlength="160" autocomplete="email"></div>
+        <div class="field"><label for="m_company">Company Name</label><input class="input" id="m_company" name="company" maxlength="160" autocomplete="organization"></div>
+        <div class="field full"><label for="m_message">Your Message <span class="req">*</span></label>
+          <div style="position:relative"><textarea class="input" id="m_message" name="message" maxlength="500" placeholder="Tell us how you would like to connect…"></textarea><span class="counter"></span></div></div>
+      </div>
+      <div class="form-error" hidden style="margin-top:14px"></div>
+      <div class="btn-row" style="margin-top:20px"><button class="btn btn-primary" type="submit">Send Enquiry <i data-i="arrow-right"></i></button><button class="btn btn-outline" type="button" data-close>Cancel</button></div>
+    </form>
+  </div>
+
+  <footer class="site-footer"></footer>
+  <script src="js/site.js?v=20261031b"></script>
+  <script src="js/member.js?v=20261031b"></script>
+</body>
+</html>

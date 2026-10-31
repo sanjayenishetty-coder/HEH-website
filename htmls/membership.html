@@ -7,32 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20261031b">
 </head>
-<body>
-  <header class="site-header">
-    <div class="container">
-      <a class="logo" href="index.html" aria-label="Hyderabad Entrepreneurs Hub home">
-        <span class="logo-text"><span class="top">HYDERABAD</span><span class="bottom">entrepreneur<b>Hub</b></span></span>
-        <svg viewBox="0 0 52 42" aria-hidden="true"><path d="M4 8 L18 4 V38 L4 34Z" fill="#0d2a4f"/><path d="M20 6 L32 8 V36 L20 38Z" fill="#f5a623"/><path d="M34 8 L48 4 V34 L34 38Z" fill="#0d2a4f"/><path d="M22 8 L30 9 V35 L22 36Z" fill="#f26a1b"/></svg>
-      </a>
-      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false">☰</button>
-      <nav class="nav">
-        <a href="index.html">Home</a>
-        <a href="about.html">About HEH</a>
-        <a class="active" href="membership.html">Membership</a>
-        <a href="#">Events</a>
-        <a href="#">Our Community</a>
-        <a href="#">Contact Us</a>
-      </nav>
-      <a class="btn btn-primary header-cta" href="#enquire">Become a Member</a>
-    </div>
-  </header>
+<body data-nav="membership">
+  <header class="site-header"></header>
 
   <main>
     <section class="page-hero">
       <div class="container">
-        <span class="eyebrow rule">Membership</span>
+        <span class="eyebrow tracked rule">Membership</span>
         <h1>Become a Part of a<br><span class="accent">Growing Entrepreneur Community</span></h1>
         <p class="lead">HEH welcomes entrepreneurs and business leaders who believe in building genuine relationships, sharing knowledge and creating meaningful business opportunities.</p>
       </div>
@@ -54,7 +37,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section divided">
       <div class="container">
         <h2 class="rule">Membership Benefits</h2>
         <div class="card">
@@ -71,7 +54,7 @@
       </div>
     </section>
 
-    <section class="section">
+    <section class="section divided">
       <div class="container">
         <h2 class="rule">How to Become a Member</h2>
         <div class="card steps">
@@ -87,24 +70,18 @@
     <div class="container">
       <section class="cta" id="enquire">
         <div>
-          <span class="eyebrow rule">Call to Action</span>
-          <h2>Enquire About Membership</h2>
+          <span class="eyebrow tracked rule">Call to Action</span>
+          <h2>Ready to Join HEH?</h2>
           <p>Membership fees, eligibility requirements and applicable terms will be communicated during the application process or displayed as approved by HEH.</p>
         </div>
-        <a class="btn btn-primary" href="#">Enquire About Membership</a>
+        <div class="btn-row">
+          <a class="btn btn-primary" href="membership-apply.html">Apply for Membership <i data-i="arrow-right"></i></a>
+          <a class="btn btn-outline" href="contact.html?type=Membership">Enquire About Membership</a>
+        </div>
       </section>
     </div>
   </main>
-  <script>
-    const toggle = document.querySelector('.menu-toggle');
-    const nav = document.querySelector('.nav');
-    const setMenu = (open) => {
-      nav.classList.toggle('open', open);
-      toggle.setAttribute('aria-expanded', open);
-      toggle.textContent = open ? '✕' : '☰';
-    };
-    toggle.addEventListener('click', () => setMenu(!nav.classList.contains('open')));
-    nav.addEventListener('click', (e) => { if (e.target.closest('a')) setMenu(false); });
-  </script>
+  <footer class="site-footer"></footer>
+  <script src="js/site.js?v=20261031b"></script>
 </body>
 </html>

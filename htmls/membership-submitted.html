@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Application Submitted | Hyderabad Entrepreneurs Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261031b">
+</head>
+<body data-nav="membership">
+  <header class="site-header"></header>
+
+  <main>
+    <section class="page-hero center" style="padding-bottom:36px">
+      <div class="container">
+        <nav class="crumbs" aria-label="Breadcrumb" style="justify-content:flex-start"><a href="index.html">Home</a><i data-i="chevron-right"></i><a href="membership.html">Membership</a><i data-i="chevron-right"></i><a href="membership-apply.html">Apply</a><i data-i="chevron-right"></i><span>Application Submitted</span></nav>
+        <div class="success-mark" style="margin-top:20px"><i data-i="check"></i><span class="ray"></span><span class="ray"></span><span class="ray"></span><span class="ray"></span><span class="ray"></span><span class="ray"></span></div>
+        <span class="eyebrow" style="letter-spacing:.02em">Application Submitted</span>
+        <h1>Thank You for Your<br>Interest in HEH!</h1>
+        <p class="lead">Your membership application has been successfully submitted to Hyderabad Entrepreneurs Hub.</p>
+        <p class="muted" style="margin:12px auto 0;max-width:480px">Our Membership Committee will review your application and communicate the next steps.</p>
+        <span class="status-pill" style="margin-top:20px;padding:10px 20px;border-radius:999px;border:1px solid #cfe9d6"><i data-i="check-circle"></i> Application Received</span>
+      </div>
+    </section>
+
+    <section class="section tight">
+      <div class="container">
+        <div class="panel pad">
+          <h2 class="title sm" style="margin-bottom:20px">Your Application Details</h2>
+          <div class="dtable" data-details><div class="loading">Loading your application…</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section tight">
+      <div class="container">
+        <h2 class="title sm" style="margin-bottom:26px">Your Membership Journey</h2>
+        <div class="journey cards" style="--n:4">
+          <div class="step current"><span class="num">01</span><span class="ic"><i data-i="file-edit"></i></span><h3>Application Received</h3><p>Your application has been submitted.</p></div>
+          <div class="step"><span class="num">02</span><span class="ic blue"><i data-i="users"></i></span><h3>Committee Review</h3><p>HEH evaluates your application.</p></div>
+          <div class="step"><span class="num">03</span><span class="ic blue"><i data-i="chat"></i></span><h3>Interaction</h3><p>Additional discussion, if required.</p></div>
+          <div class="step"><span class="num">04</span><span class="ic blue"><i data-i="check"></i></span><h3>Decision</h3><p>HEH communicates its decision.</p></div>
+        </div>
+        <div class="notice lg" style="margin-top:26px">
+          <i data-i="info" style="width:44px;height:44px"></i><span class="divider"></span>
+          <div><h3>Please Note</h3><p>Your application is subject to HEH membership eligibility guidelines, category availability and approval by the HEH Membership Committee. Submitting an application does not automatically grant membership.</p></div>
+        </div>
+        <div class="btn-row center" style="margin:30px 0 20px">
+          <a class="btn btn-primary" href="index.html" style="min-width:230px">Back to Home <i data-i="arrow-right"></i></a>
+          <a class="btn btn-outline" href="events.html" style="min-width:240px">Explore HEH Events</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"></footer>
+  <script src="js/site.js?v=20261031b"></script>
+  <script>
+    (async () => {
+      const { api, esc, fmt, param, icon } = HEH;
+      const box = document.querySelector('[data-details]');
+      const STATUS = { received: 'Received', under_review: 'Under Review', interaction: 'Interaction', approved: 'Approved', rejected: 'Not Approved' };
+      try {
+        const a = await api(`/applications/${encodeURIComponent(param('ref') || '')}?t=${encodeURIComponent(param('t') || '')}`);
+        const row = (ic, tone, k, v) => `<div class="row"><span class="ic ${tone}">${icon(ic)}</span><span class="k">${k}</span><span class="v">${v}</span></div>`;
+        box.innerHTML =
+          row('file', '', 'Application Reference', esc(a.ref)) +
+          row('user', 'blue', 'Applicant Name', esc(a.full_name)) +
+          row('building', 'purple', 'Company Name', esc(a.company_name)) +
+          row('tag', '', 'Business Category', esc(a.business_category)) +
+          row('calendar', 'blue', 'Submission Date', esc(fmt.stamp(a.created_at))) +
+          row('star', 'green', 'Application Status', `<span class="badge green lg">${STATUS[a.status] || esc(a.status)}</span>`);
+      } catch {
+        box.innerHTML = '<div class="empty" style="border:0">We could not find this application. If you submitted one, our team has received it and will contact you.</div>';
+      }
+    })();
+  </script>
+</body>
+</html>

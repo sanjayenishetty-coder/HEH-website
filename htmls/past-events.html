@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Past Events | Hyderabad Entrepreneurs Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261031b">
+</head>
+<body data-nav="events">
+  <header class="site-header"></header>
+
+  <main data-when="past">
+    <section class="page-hero">
+      <div class="container">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><i data-i="chevron-right"></i><a href="events.html">Events</a><i data-i="chevron-right"></i><span>Past Events</span></nav>
+        <h1 class="title" style="font-size:clamp(36px,5vw,56px)">Our Journey. Our Connections.</h1>
+        <p class="lead" style="max-width:500px">Explore the meaningful moments, inspiring conversations and valuable connections created through HEH gatherings.</p>
+      </div>
+    </section>
+
+    <section class="section tight" style="padding-bottom:40px">
+      <div class="container">
+        <div class="filter-bar">
+          <div class="seg" role="group" aria-label="Event type">
+            <button type="button" class="active" data-cat="">All Events</button><button type="button" data-cat="spotlight">Spotlight</button><button type="button" data-cat="workshop">Workshop</button>
+          </div>
+          <span class="vr"></span>
+          <label>Year <select class="input" name="year"><option value="">All Years</option></select></label>
+          <label>Month <select class="input" name="month"></select></label>
+        </div>
+
+        <h2 class="title" style="margin:34px 0 22px">Memorable HEH Gatherings</h2>
+        <div class="card-grid" data-grid></div>
+        <div class="more"><button class="btn btn-outline" data-more hidden>Load More Events <i data-i="arrow-down"></i></button></div>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div class="container">
+        <span class="ic"><i data-i="users"></i></span>
+        <div class="copy">
+          <h2>Be Part of Our Next Gathering</h2>
+          <p>Connect with entrepreneurs, exchange ideas and explore meaningful business opportunities through HEH.</p>
+        </div>
+        <div class="actions">
+          <a class="btn btn-primary" href="events.html">Explore Upcoming Events <i data-i="arrow-right"></i></a>
+          <a class="btn btn-ghost-light" href="membership-apply.html">Become a Member</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"></footer>
+  <script src="js/site.js?v=20261031b"></script>
+  <script src="js/events-list.js?v=20261031b"></script>
+</body>
+</html>

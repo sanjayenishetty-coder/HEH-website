@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Event Registration | Hyderabad Entrepreneurs Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261031b">
+</head>
+<body data-nav="events">
+  <header class="site-header"></header>
+
+  <main>
+    <section class="page-hero" style="padding-bottom:22px">
+      <div class="container">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><i data-i="chevron-right"></i><a href="events.html">Events</a><i data-i="chevron-right"></i><span>Event Registration</span></nav>
+        <h1 style="margin-top:26px">Register for an HEH Event</h1>
+        <p class="lead" style="max-width:640px">Confirm your participation and connect with fellow entrepreneurs at our upcoming HEH gathering.</p>
+        <div class="panel event-strip" style="margin-top:28px" data-strip><div class="loading" style="grid-column:1/-1;padding:10px">Loading event…</div></div>
+      </div>
+    </section>
+
+    <section class="section tight" style="padding-bottom:40px">
+      <div class="container">
+        <form class="panel pad" id="register" novalidate>
+          <h2 class="title">Confirm Your Participation</h2>
+          <p style="margin:10px 0 24px">Please provide your details to register for this event.</p>
+          <div class="form-grid">
+            <div class="field sans"><label for="full_name"><b>Full Name</b> <span class="req">*</span></label><input class="input" id="full_name" name="full_name" maxlength="120" autocomplete="name" placeholder="Enter your full name"></div>
+            <div class="field sans"><label for="mobile"><b>Mobile Number</b> <span class="req">*</span></label>
+              <div class="input-wrap"><span class="prefix">+91 <i data-i="chevron-down" style="width:16px;height:16px"></i></span><input class="input" id="mobile" name="mobile" type="tel" inputmode="numeric" maxlength="14" autocomplete="tel-national" placeholder="Enter your mobile number"></div></div>
+            <div class="field sans"><label for="company"><b>Company Name</b> <span class="req">*</span></label><input class="input" id="company" name="company" maxlength="160" autocomplete="organization" placeholder="Enter your company name"></div>
+            <div class="field sans"><label for="membership_id"><b>Membership ID</b> <span class="req">*</span></label><input class="input" id="membership_id" name="membership_id" maxlength="40" placeholder="Enter your HEH membership ID"></div>
+            <div class="field sans"><label for="email"><b>Email Address</b></label><input class="input" id="email" name="email" type="email" maxlength="160" autocomplete="email" placeholder="Enter your email address (optional)"></div>
+          </div>
+          <label class="check" style="margin-top:24px"><input type="checkbox" name="consent"> I confirm my participation in this HEH event and agree to the applicable event guidelines.</label>
+          <div class="form-error" hidden style="margin-top:16px"></div>
+          <div class="btn-row" style="margin-top:26px">
+            <button class="btn btn-primary" type="submit" style="min-width:270px">Confirm Registration <i data-i="arrow-right"></i></button>
+            <a class="btn btn-outline" data-back href="events.html" style="min-width:230px">Back to Event Details</a>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"></footer>
+  <script src="js/site.js?v=20261031b"></script>
+  <script>
+    (async () => {
+      const { api, esc, fmt, icon, param, formData, showErrors } = HEH;
+      const slug = param('e');
+      const strip = document.querySelector('[data-strip]');
+      const form = document.getElementById('register');
+      if (!slug) return (location.href = 'events.html');
+      document.querySelector('[data-back]').href = `event.html?e=${encodeURIComponent(slug)}`;
+      let open = false;
+      try {
+        const e = await api(`/events/${encodeURIComponent(slug)}`);
+        open = e.registration_open && !e.is_past;
+        strip.innerHTML = `
+          <div><span class="badge caps">${e.category === 'workshop' ? 'HEH Workshop' : 'HEH Spotlight'}</span><h3>${esc(e.title)}</h3><p style="font-size:15.5px">${esc(e.short_description || '')}</p></div>
+          <div class="m"><b>${icon('calendar')} Date</b><span>${esc(fmt.date(e.event_date))}</span></div>
+          <div class="m"><b>${icon('clock')} Time</b><span>${esc(fmt.timeRange(e.start_time, e.end_time))}</span></div>
+          <div class="m"><b>${icon('pin')} Venue</b><span>${esc(e.venue_name || 'Venue will be updated')}</span></div>
+          <div><span class="status-pill${open ? '' : ' closed'}">${open ? 'Registration Open' : 'Registration Closed'}</span></div>`;
+        document.title = `Register: ${e.title} | Hyderabad Entrepreneurs Hub`;
+        if (!open) {
+          form.querySelectorAll('input, button[type=submit]').forEach((el) => (el.disabled = true));
+          showErrors(form, { message: 'Registration for this event is closed.' });
+        }
+      } catch (err) {
+        strip.innerHTML = `<div style="grid-column:1/-1">${err.status === 404 ? 'This event could not be found.' : esc(err.message)}</div>`;
+        form.hidden = true;
+        return;
+      }
+      form.addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        const btn = form.querySelector('[type="submit"]');
+        btn.disabled = true;
+        try {
+          const res = await api(`/events/${encodeURIComponent(slug)}/register`, { method: 'POST', body: formData(form) });
+          location.href = `registration-confirmed.html?ref=${encodeURIComponent(res.ref)}&t=${res.token}`;
+        } catch (err) {
+          btn.disabled = false;
+          showErrors(form, err);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

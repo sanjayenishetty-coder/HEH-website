@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact Us | Hyderabad Entrepreneurs Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261031b">
+</head>
+<body data-nav="contact">
+  <header class="site-header"></header>
+
+  <main>
+    <section class="page-hero">
+      <div class="container hero-grid">
+        <div>
+          <nav class="crumbs" aria-label="Breadcrumb"><a href="index.html">Home</a><i data-i="chevron-right"></i><span>Contact Us</span></nav>
+          <span class="eyebrow rule" style="margin-top:22px">Contact HEH</span>
+          <h1>Let’s Connect &amp;<br>Grow Together.</h1>
+          <p class="lead" style="max-width:540px">Have a question about HEH, membership or business collaboration? We’d be happy to hear from you.</p>
+        </div>
+        <div class="hero-tagline"><span>Connect</span><span>Collaborate</span><span>Grow</span></div>
+      </div>
+    </section>
+
+    <section class="section tight">
+      <div class="container">
+        <h2 class="title" style="margin-bottom:22px">Get in Touch</h2>
+        <div class="contact-cards">
+          <div class="panel contact-card"><span class="ic"><i data-i="mail"></i></span><div><h3>Email Us</h3><p>For membership, business collaborations and general enquiries.</p><a class="big" href="mailto:info@heh.in">info@heh.in</a></div></div>
+          <div class="panel contact-card"><span class="ic"><i data-i="phone"></i></span><div><h3>Call Us</h3><p>Speak with our team during business hours.</p><a class="big" href="tel:+919876543210">+91 98765 43210</a></div></div>
+          <div class="panel contact-card"><span class="ic"><i data-i="pin"></i></span><div><h3>Our Location</h3><p style="font-size:15px;color:var(--ink)">Hyderabad, Telangana<br>India</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section tight" style="padding-bottom:48px">
+      <div class="container contact-layout">
+        <form class="panel pad" id="enquiry" novalidate>
+          <h2 class="title">Send Us a Message</h2>
+          <p style="margin:12px 0 24px">Complete the form below and our team will get back to you.</p>
+          <div class="form-grid">
+            <div class="field"><label for="full_name">Full Name <span class="req">*</span></label><input class="input" id="full_name" name="full_name" maxlength="120" autocomplete="name" placeholder="Enter your full name"></div>
+            <div class="field"><label for="mobile">Mobile Number <span class="req">*</span></label><input class="input" id="mobile" name="mobile" type="tel" maxlength="16" autocomplete="tel" placeholder="Enter your mobile number"></div>
+            <div class="field"><label for="email">Email Address <span class="req">*</span></label><input class="input" id="email" name="email" type="email" maxlength="160" autocomplete="email" placeholder="Enter your email address"></div>
+            <div class="field"><label for="company">Company Name</label><input class="input" id="company" name="company" maxlength="160" autocomplete="organization" placeholder="Enter your company name"></div>
+            <div class="field full"><label for="enquiry_type">Enquiry Type <span class="req">*</span></label><select class="input" id="enquiry_type" name="enquiry_type"><option value="">Select enquiry type</option></select></div>
+            <div class="field full"><label for="message">Your Message <span class="req">*</span></label>
+              <div style="position:relative"><textarea class="input" id="message" name="message" maxlength="500" placeholder="Tell us how we can help you..."></textarea><span class="counter"></span></div></div>
+          </div>
+          <div class="form-error" hidden style="margin-top:16px"></div>
+          <div class="btn-row" style="margin-top:22px">
+            <button class="btn btn-primary" type="submit" style="min-width:190px">Send Message <i data-i="arrow-right"></i></button>
+            <button class="btn btn-outline" type="reset" style="min-width:160px">Clear Form</button>
+          </div>
+        </form>
+
+        <aside class="panel pad">
+          <h2 class="title sm">Our Location</h2>
+          <iframe class="map-frame" style="margin-top:18px" title="Map of Hyderabad, Telangana" loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+            src="https://www.google.com/maps?q=Hyderabad,+Telangana,+India&z=11&output=embed"></iframe>
+          <div class="office">
+            <div class="row"><i data-i="building"></i><div><h3>Visit Our Office</h3><p>Hyderabad, Telangana<br>India</p></div></div>
+            <div class="row"><i data-i="clock"></i><div><h3>Business Hours</h3><p>Monday - Saturday<br>9:00 AM - 6:00 PM</p></div></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="cta-band">
+      <div class="container">
+        <span class="ic"><i data-i="users"></i></span>
+        <div class="copy">
+          <h2>Become Part of the HEH Community</h2>
+          <p>Join a trusted network of entrepreneurs committed to building meaningful relationships, sharing knowledge and creating opportunities.</p>
+        </div>
+        <div class="actions">
+          <a class="btn btn-primary" href="membership.html">Explore Membership <i data-i="arrow-right"></i></a>
+          <a class="btn btn-ghost-light" href="membership-apply.html">Become a Member</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"></footer>
+  <script src="js/site.js?v=20261031b"></script>
+  <script>
+    (() => {
+      const { api, formData, showErrors, clearErrors, bindCounters, fillSelect, meta, param } = HEH;
+      const form = document.getElementById('enquiry');
+      const type = form.elements.enquiry_type;
+      meta().then((m) => {
+        fillSelect(type, m.enquiryTypes, 'Select enquiry type');
+        const wanted = param('type');
+        if (wanted && m.enquiryTypes.includes(wanted)) type.value = wanted;
+      });
+      bindCounters(form);
+      form.addEventListener('reset', () => setTimeout(() => { clearErrors(form); bindCounters(form); }));
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('[type="submit"]');
+        btn.disabled = true;
+        try {
+          const res = await api('/enquiries', { method: 'POST', body: formData(form) });
+          location.href = `enquiry-submitted.html?ref=${encodeURIComponent(res.ref)}&t=${res.token}`;
+        } catch (err) {
+          btn.disabled = false;
+          showErrors(form, err);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
