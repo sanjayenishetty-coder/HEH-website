@@ -9,7 +9,7 @@ Website for **Hyderabad Entrepreneurs Hub (HEH)**, built from the design screens
 ```
 images/                    Design screenshots (source of truth for layout/content)
 htmls/                     The website (static HTML/CSS/JS) — deployed to /srv/heh/prod/frontend
-  styles.css               Shared styles (colours/fonts are CSS variables in :root; breakpoints 1080/860/520px)
+  styles.css               Shared styles (colours/fonts are CSS variables in :root; breakpoints 1080/960/860/520px)
   js/site.js               Shared header, footer, icon sprite and helpers (api, formatting, form errors)
   index.html               Home
   about.html               About HEH
@@ -32,6 +32,10 @@ deploy/                    systemd unit and nginx location blocks used on the se
 The header/footer are rendered by `js/site.js`: each page has an empty `<header class="site-header">` /
 `<footer class="site-footer">` and sets the active nav item with `<body data-nav="...">`.
 Icons: `<i data-i="calendar"></i>` in HTML or `HEH.icon('calendar')` in JS (list in `js/site.js`).
+Inside round badges (`<span class="ic">`) the solid version from `FILLED` in `js/site.js` is used automatically.
+
+CSS/JS are linked with a version, e.g. `styles.css?v=20261031b`. When you change CSS or JS, bump that
+value in every page and in `admin/index.html` so browsers load the new files.
 
 ## Run locally
 
@@ -55,7 +59,9 @@ enter to register for events), success stories, and follow up membership applica
 event registrations (status, internal notes, CSV export). Uploaded images go to `/srv/heh/prod/uploads`.
 
 To change the admin password: `npm run hash-password -- 'new-password'`, put the result in
-`/srv/heh/prod/backend/.env`, then `systemctl restart heh-api`.
+`/srv/heh/prod/backend/.env` (edit the file directly; the hash contains `$` characters that a shell
+will mangle if you pass it through a variable), then `systemctl restart heh-api`.
+Sign-in ignores surrounding spaces; 10 failed attempts lock it for 15 minutes.
 
 ## Deploy
 
@@ -73,7 +79,8 @@ Server: Ubuntu VPS `169.58.149.137`, user `root`, SSH key `E:\Personal\vishnu\pr
 | Backups made before changes | `/srv/heh/prod/backups/` |
 | DNS | A record `heh` → `169.58.149.137` (GoDaddy, visuprojects.in) |
 
-Both nginx sites proxy `/api/` to `127.0.0.1:1502` and serve `/uploads/` (see `deploy/nginx-heh-locations.conf`).
+Both nginx sites proxy `/api/` to `127.0.0.1:1502`, serve `/uploads/`, and send `Cache-Control: no-cache`
+for the site so browsers always re-check for new versions (see `deploy/nginx-heh-locations.conf`).
 
 Frontend-only change (no restart needed):
 
@@ -91,6 +98,14 @@ Check it:
 curl -I https://heh.visuprojects.in/
 curl https://heh.visuprojects.in/api/health
 ```
+
+On Windows git-bash, use `tar --force-local` when packing files from a `C:` path.
+
+## Before launch
+
+- Replace the sample events, members and success stories (seeded from the designs) in `/admin/`.
+- Replace the placeholder phone number "+91 98765 43210" in `htmls/contact.html`.
+- Set the real LinkedIn / Instagram links in the footer (`js/site.js`, currently `#`).
 
 > The server hosts other projects (kvgc, yoga, stock360, zoofilings, batterydukaan, whatsapp, ...).
 > Only touch `/srv/heh`, `heh-api.service`, the `heh_test` database and the two `heh-*` nginx files.
