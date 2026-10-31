@@ -8,49 +8,67 @@ Website for **Hyderabad Entrepreneurs Hub (HEH)**, built from the design screens
 
 ```
 images/                    Design screenshots (source of truth for layout/content)
-htmls/                     The website (static HTML/CSS/JS) — deployed to /srv/heh/prod/frontend
-  styles.css               Shared styles (colours/fonts are CSS variables in :root; breakpoints 1080/960/860/520px)
-  assets/brand/            Logo (logo.png, white-text logo-light.png for the footer) and favicons
-  js/site.js               Shared header, footer, icon sprite and helpers (api, formatting, form errors)
-  index.html               Home
-  about.html               About HEH
-  membership.html          Membership benefits
-  membership-apply.html    3-step application (js/apply.js) -> membership-submitted.html
-  contact.html             Contact form -> enquiry-submitted.html
-  events.html / past-events.html   Event lists (js/events-list.js)
-  event.html?e=<slug>      Event details (upcoming) or highlights (past) (js/event.js)
-  event-register.html?e=<slug> -> registration-confirmed.html
-  community.html, members.html, member.html?m=<slug>, success-stories.html, story.html?s=<slug>
-  admin/                   Admin panel (sign in at /admin/)
+web/                       The website + admin panel: React 18 + react-router, built with Vite
+  index.html               HTML shell (fonts, favicon)
+  public/assets/           Static files: brand/ (logo, white-text logo-light for the footer, favicons),
+                           team/ (core team photos), charminar.jpg (home hero)
+  src/main.jsx             Routes (one per page) and the lazy-loaded admin
+  src/pages.js             Page names; the build writes dist/<name>.html for each (see below)
+  src/styles.css           Shared styles (colours/fonts are CSS variables in :root; breakpoints 1080/960/860/520px)
+  src/components/          Layout (header/footer), Icon/Ic (icons), ui (Media, badges), forms (useSubmit, Field...)
+  src/lib/                 api (fetch /api), format (dates in India time), hooks (useTitle, useParam, useApi), icons
+  src/pages/               One component per page (Home, About, Membership, MembershipApply, Contact, Events,
+                           Event, EventRegister, Community, Members, Member, SuccessStories, Story, ...)
+  src/admin/               Admin panel (/admin/): Login, Dashboard, Submissions, Content editors
+  scripts/route-pages.js   Post-build: copies dist/index.html to about.html, events.html, admin/index.html ...
 backend/                   Node/Express API (PostgreSQL) — deployed to /srv/heh/prod/backend
-  src/schema.sql           Database schema (npm run db:migrate)
-  src/seed.js              Sample content from the designs (npm run db:seed; only fills empty tables)
+  migrations/              Versioned SQL migrations (NNNN_name.sql), applied by src/migrate.js
+  src/seed.js              Sample events/stories from the designs (npm run db:seed; only fills empty tables)
   src/routes/public.js     /api/... used by the website
   src/routes/admin.js      /api/admin/... used by the admin panel
 deploy/                    systemd unit and nginx location blocks used on the server
 ```
 
-The header/footer are rendered by `js/site.js`: each page has an empty `<header class="site-header">` /
-`<footer class="site-footer">` and sets the active nav item with `<body data-nav="...">`.
-Icons: `<i data-i="calendar"></i>` in HTML or `HEH.icon('calendar')` in JS (list in `js/site.js`).
-Inside round badges (`<span class="ic">`) the solid version from `FILLED` in `js/site.js` is used automatically.
+URLs are clean (`/about`, `/event?e=<slug>`, `/member?m=<slug>`); old `*.html` addresses still work and
+redirect. nginx serves files with `try_files $uri $uri.html`, so the build writes one copy of the app's
+`index.html` per page name: no nginx change is needed, and an unknown path is a real 404.
 
-CSS/JS are linked with a version, e.g. `styles.css?v=20261031d`. When you change CSS or JS, bump that
-value in every page and in `admin/index.html` so browsers load the new files.
+Icons: `<Icon name="calendar" />`; round badges `<Ic name="users" tone="blue" />` use the solid glyph from
+`FILLED` in `src/lib/icons.js` (add one there when you add a badge icon). Built JS/CSS have hashed file
+names, so browsers always load the new version after a deploy.
 
 ## Run locally
 
 ```bash
 cd backend
 npm install
-cp .env.example .env      # fill in DATABASE_URL, SESSION_SECRET, ADMIN_PASSWORD_HASH; set SERVE_STATIC=1
+cp .env.example .env      # fill in DATABASE_URL, SESSION_SECRET, ADMIN_PASSWORD_HASH
 npm run hash-password -- 'your-admin-password'   # -> ADMIN_PASSWORD_HASH
 npm run db:migrate && npm run db:seed
-npm run dev               # http://localhost:1502 serves the site and the API
+npm run dev               # API on http://localhost:1502
+
+cd ../web
+npm install
+npm run dev               # http://localhost:5173, proxies /api and /uploads to :1502
+npm run build             # -> web/dist (with SERVE_STATIC=1 the API also serves it on :1502)
 ```
 
 To use the server's database from your machine, tunnel it:
 `ssh -i <key> -N -L 15432:127.0.0.1:5432 root@169.58.149.137` and use port 15432 in `DATABASE_URL`.
+
+## Database migrations
+
+Schema and data changes are SQL files in `backend/migrations/`, applied in order, each once, in a
+transaction, and recorded in the `schema_migrations` table (with a checksum).
+
+```bash
+npm run db:migrate                     # apply pending migrations
+npm run db:migrate:status              # list applied / pending
+npm run db:migrate:new -- add_x_column # create migrations/NNNN_add_x_column.sql
+```
+
+Never edit a migration that has been applied (the runner refuses: "Already-applied migrations were
+edited"); add a new one. `0001` is the initial schema, `0002` loads the HEH member list.
 
 ## Admin
 
@@ -83,15 +101,13 @@ Server: Ubuntu VPS `169.58.149.137`, user `root`, SSH key `E:\Personal\vishnu\pr
 Both nginx sites proxy `/api/` to `127.0.0.1:1502`, serve `/uploads/`, and send `Cache-Control: no-cache`
 for the site so browsers always re-check for new versions (see `deploy/nginx-heh-locations.conf`).
 
-Frontend-only change (no restart needed):
+Frontend change (no restart needed): `cd web && npm run build`, then replace the contents of
+`/srv/heh/prod/frontend` with `web/dist` (upload to a new folder on the server and swap it in, keeping the
+old one in `backups/`).
 
-```bash
-scp -i "E:\Personal\vishnu\projects\servers\kvgc_key_pair.pem" -r htmls/* root@169.58.149.137:/srv/heh/prod/frontend/
-```
-
-Backend change: copy `backend/src` (and `package*.json` if dependencies changed) to `/srv/heh/prod/backend`,
-run `npm ci --omit=dev` there if needed, `sudo -u heh node src/migrate.js` if the schema changed, then
-`systemctl restart heh-api`.
+Backend change: copy `backend/src`, `backend/migrations` (and `package*.json` if dependencies changed) to
+`/srv/heh/prod/backend`, run `npm ci --omit=dev` there if needed, then `sudo -u heh node src/migrate.js`
+and `systemctl restart heh-api`.
 
 Check it:
 
@@ -104,9 +120,9 @@ On Windows git-bash, use `tar --force-local` when packing files from a `C:` path
 
 ## Before launch
 
-- Replace the sample events, members and success stories (seeded from the designs) in `/admin/`.
-- Replace the placeholder phone number "+91 98765 43210" in `htmls/contact.html`.
-- Set the real LinkedIn / Instagram links in the footer (`js/site.js`, currently `#`).
+- Replace the sample events and success stories (seeded from the designs) in `/admin/`; add member photos and profiles.
+- Replace the placeholder phone number "+91 98765 43210" in `web/src/pages/Contact.jsx`.
+- Set the real LinkedIn / Instagram links in the footer (`web/src/components/Layout.jsx`, currently `#`).
 
 > The server hosts other projects (kvgc, yoga, stock360, zoofilings, batterydukaan, whatsapp, ...).
 > Only touch `/srv/heh`, `heh-api.service`, the `heh_test` database and the two `heh-*` nginx files.

@@ -29,5 +29,5 @@ module.exports = {
   sessionSecret: process.env.SESSION_SECRET,
   uploadDir: path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads')),
   serveStatic: process.env.SERVE_STATIC === '1',
-  staticDir: path.resolve(__dirname, '..', '..', 'htmls'),
+  staticDir: path.resolve(__dirname, '..', '..', 'web', 'dist'), // React build (cd web && npm run build)
 };

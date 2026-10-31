@@ -8,6 +8,8 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "db:migrate": "node src/migrate.js",
+    "db:migrate:status": "node src/migrate.js status",
+    "db:migrate:new": "node src/migrate.js new",
     "db:seed": "node src/seed.js",
     "hash-password": "node src/hash-password.js"
   },
