@@ -1,8 +1,10 @@
 // HEH admin panel: submissions (applications, enquiries, registrations) and content (events, members, stories).
-// Tabs live in the URL hash (#applications?status=received) so lists can be bookmarked and linked.
+// Pages live in the URL hash (#applications?status=received&q=rahul) so lists can be bookmarked and linked.
+// Layout from images/Admin Login/.../Part1: navy sidebar, top bar with search, notifications and the admin menu.
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import './admin.css';
 import { api } from '../lib/api.js';
+import { Icon } from '../components/Icon.jsx';
 import Login from './Login.jsx';
 import Dashboard from './Dashboard.jsx';
 import Submissions from './Submissions.jsx';
@@ -11,14 +13,15 @@ import Content from './Content.jsx';
 const Ctx = createContext(null);
 export const useAdmin = () => useContext(Ctx);
 
+// Sidebar menu, in the order of the designs: [hash, menu text, icon, page title]
 const TABS = [
-  ['dashboard', 'Dashboard'],
-  ['applications', 'Applications'],
-  ['enquiries', 'Enquiries'],
-  ['registrations', 'Registrations'],
-  ['events', 'Events'],
-  ['members', 'Members'],
-  ['stories', 'Stories'],
+  ['dashboard', 'Dashboard', 'home', 'Dashboard'],
+  ['applications', 'Membership Applications', 'file', 'Membership Applications'],
+  ['members', 'Members', 'users', 'Member Directory'],
+  ['events', 'Events', 'calendar', 'Events Management'],
+  ['registrations', 'Registrations', 'user-check', 'Event Registrations'],
+  ['stories', 'Success Stories', 'star', 'Success Stories'],
+  ['enquiries', 'Enquiries', 'chat', 'Enquiry Management'],
 ];
 
 const readHash = () => {
@@ -26,11 +29,12 @@ const readHash = () => {
   return { tab: TABS.some(([k]) => k === tab) ? tab : 'dashboard', query: new URLSearchParams(query) };
 };
 
-export const label = (s) => String(s || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 export default function Admin() {
   const [auth, setAuth] = useState('checking'); // checking | login | app
-  const [meta, setMeta] = useState({ industries: [], storyCategories: [], eventCategories: [] });
+  const [expired, setExpired] = useState(false); // signed out by a 401 while working
+  const [user, setUser] = useState('Admin');
+  const [meta, setMeta] = useState({ industries: [], storyCategories: [], eventCategories: [], memberTypes: [] });
   const [route, setRoute] = useState(readHash);
   const [reloadKey, setReloadKey] = useState(0);
   const [modal, setModal] = useState(null);
@@ -64,23 +68,27 @@ export default function Admin() {
     toastTimer.current = setTimeout(() => setToastMsg(null), 3000);
   }, []);
 
-  const showLogin = useCallback(() => { setModal(null); setAuth('login'); }, []);
+  const showLogin = useCallback((wasExpired = false) => { setModal(null); setExpired(wasExpired); setAuth('login'); }, []);
 
   const call = useCallback(async (path, opts) => {
     try {
       return await api(`/admin${path}`, opts);
     } catch (err) {
-      if (err.status === 401) showLogin();
+      if (err.status === 401) showLogin(true);
       throw err;
     }
   }, [showLogin]);
 
   const showApp = useCallback(async () => {
     setAuth('app');
-    try { setMeta(await call('/meta')); } catch { /* 401 handled by call */ }
+    try {
+      const [me, m] = await Promise.all([call('/me'), call('/meta')]);
+      setUser(me.user || 'Admin');
+      setMeta(m);
+    } catch { /* 401 handled by call */ }
   }, [call]);
 
-  useEffect(() => { api('/admin/me').then(showApp).catch(showLogin); }, [showApp, showLogin]);
+  useEffect(() => { api('/admin/me').then(showApp).catch(() => showLogin()); }, [showApp, showLogin]);
 
   const go = (hash) => { window.location.hash = hash; };
   const reload = () => setReloadKey((k) => k + 1);
@@ -90,37 +98,20 @@ export default function Admin() {
     showLogin();
   }
 
-  const ctx = { call, toast, openModal: setModal, closeModal, meta, go, reload, showLogin };
+  const ctx = { call, toast, openModal: setModal, closeModal, meta, go, reload, showLogin, user };
   const { tab, query } = route;
   const viewKey = `${window.location.hash}|${reloadKey}`;
 
   return (
     <Ctx.Provider value={ctx}>
-      {auth === 'login' && <Login onSignedIn={showApp} />}
+      {auth === 'login' && <Login onSignedIn={showApp} expired={expired} />}
 
       {auth === 'app' && (
-        <div className="app">
-          <header className="topbar">
-            <div className="brand">
-              <img src="/assets/brand/logo.png" alt="Hyderabad Entrepreneurs Hub" width="448" height="136" />
-              <span className="tag">Admin</span>
-            </div>
-            <nav className="tabs">
-              {TABS.map(([k, text]) => (
-                <button key={k} className={k === tab ? 'active' : ''} onClick={() => go(k)}>{text}</button>
-              ))}
-            </nav>
-            <div className="right">
-              <a href="/" target="_blank" rel="noopener">View site</a>
-              <button className="btn btn-outline btn-sm" onClick={logout}>Sign out</button>
-            </div>
-          </header>
-          <main className="workspace">
-            {tab === 'dashboard' && <Dashboard key={viewKey} />}
-            {['applications', 'enquiries', 'registrations'].includes(tab) && <Submissions key={viewKey} name={tab} query={query} />}
-            {['events', 'members', 'stories'].includes(tab) && <Content key={viewKey} name={tab} />}
-          </main>
-        </div>
+        <Shell tab={tab} query={query} user={user} onLogout={logout} call={call} reloadKey={reloadKey}>
+          {tab === 'dashboard' && <Dashboard key={viewKey} />}
+          {['applications', 'enquiries', 'registrations'].includes(tab) && <Submissions key={viewKey} name={tab} query={query} />}
+          {['events', 'members', 'stories'].includes(tab) && <Content key={viewKey} name={tab} query={query} />}
+        </Shell>
       )}
 
       {modal && (
@@ -130,6 +121,115 @@ export default function Admin() {
       )}
       {toastMsg && <div className={`toast${toastMsg.error ? ' error' : ''}`}>{toastMsg.msg}</div>}
     </Ctx.Provider>
+  );
+}
+
+// Close a dropdown when clicking anywhere else or pressing Escape.
+function useDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDown = (e) => { if (!ref.current?.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [open]);
+  return [open, setOpen, ref];
+}
+
+function Shell({ tab, query, user, onLogout, call, reloadKey, children }) {
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('heh-admin-collapsed') === '1');
+  const [drawer, setDrawer] = useState(false); // phone/tablet menu
+  const [counts, setCounts] = useState(null);
+  const [bellOpen, setBellOpen, bellRef] = useDropdown();
+  const [userOpen, setUserOpen, userRef] = useDropdown();
+  const title = TABS.find(([k]) => k === tab)?.[3] || 'Dashboard';
+
+  // New items for the bell, refreshed on every page change.
+  useEffect(() => { call('/summary').then(setCounts, () => {}); }, [call, tab, reloadKey]);
+  useEffect(() => { setDrawer(false); }, [tab]);
+
+  function toggleMenu() {
+    if (window.matchMedia('(max-width: 960px)').matches) { setDrawer((d) => !d); return; }
+    setCollapsed((c) => { localStorage.setItem('heh-admin-collapsed', c ? '0' : '1'); return !c; });
+  }
+
+  // Search the current list; from the dashboard, search members.
+  function search(e) {
+    e.preventDefault();
+    const q = e.currentTarget.q.value.trim();
+    const target = tab === 'dashboard' ? 'members' : tab;
+    const p = new URLSearchParams(tab === target ? query : '');
+    if (q) p.set('q', q); else p.delete('q');
+    window.location.hash = `${target}${p.toString() ? `?${p}` : ''}`;
+  }
+
+  const notes = counts ? [
+    [counts.new_applications, ['new membership application', 'new membership applications'], 'applications?status=received', 'file'],
+    [counts.new_enquiries, ['new enquiry', 'new enquiries'], 'enquiries?status=received', 'chat'],
+    [counts.recent_registrations, ['event registration in the last 7 days', 'event registrations in the last 7 days'], 'registrations', 'user-check'],
+  ].filter(([n]) => n > 0) : [];
+
+  return (
+    <div className={`adm${collapsed ? ' collapsed' : ''}${drawer ? ' drawer-open' : ''}`}>
+      <aside className="adm-side">
+        <a className="adm-logo" href="#dashboard" aria-label="HEH Admin dashboard">
+          {/* same logo as the website header; the icon alone when the sidebar is collapsed */}
+          <img className="full" src="/assets/brand/logo.png" alt="Hyderabad Entrepreneurs Hub" width="448" height="136" />
+          <img className="mark" src="/assets/brand/favicon.png" alt="" width="64" height="64" />
+        </a>
+        <nav className="adm-nav">
+          {TABS.map(([k, text, icon]) => (
+            <a key={k} href={`#${k}`} className={k === tab ? 'on' : ''} title={collapsed ? text : undefined} aria-current={k === tab ? 'page' : undefined}>
+              <Icon name={icon} solid /><span>{text}</span>
+            </a>
+          ))}
+        </nav>
+      </aside>
+      <div className="adm-scrim" onClick={() => setDrawer(false)} />
+
+      <div className="adm-main">
+        <header className="adm-top">
+          <button type="button" className="adm-burger" onClick={toggleMenu} aria-label="Menu"><Icon name="menu" /></button>
+          <h1 className="adm-title">{title}</h1>
+          <form className="adm-search" onSubmit={search} role="search">
+            <Icon name="search" />
+            <input key={`${tab}${query.get('q') || ''}`} name="q" defaultValue={query.get('q') || ''} placeholder="Search anything…" aria-label="Search" />
+          </form>
+          <div className="adm-drop" ref={bellRef}>
+            <button type="button" className="adm-bell" onClick={() => setBellOpen((o) => !o)} aria-label={`Notifications${notes.length ? ' (new)' : ''}`} aria-expanded={bellOpen}>
+              <Icon name="bell" />{notes.length > 0 && <i className="dot" />}
+            </button>
+            {bellOpen && (
+              <div className="adm-menu wide">
+                <b className="adm-menu-head">Notifications</b>
+                {notes.length ? notes.map(([n, [one, many], hash, icon]) => (
+                  <a key={hash} href={`#${hash}`} onClick={() => setBellOpen(false)}>
+                    <Icon name={icon} /> <span><b>{n}</b> {n === 1 ? one : many}</span>
+                  </a>
+                )) : <p className="adm-menu-empty">You’re all caught up.</p>}
+              </div>
+            )}
+          </div>
+          <div className="adm-drop" ref={userRef}>
+            <button type="button" className="adm-user" onClick={() => setUserOpen((o) => !o)} aria-expanded={userOpen}>
+              <span className="a-avatar">{String(user || 'A')[0].toUpperCase()}</span>
+              <span className="name">{user === 'admin' ? 'Admin' : user}</span>
+              <Icon name="chevron-down" />
+            </button>
+            {userOpen && (
+              <div className="adm-menu">
+                <a href="/" target="_blank" rel="noopener"><Icon name="external" /> View website</a>
+                <button type="button" onClick={onLogout}><Icon name="logout" /> Sign out</button>
+              </div>
+            )}
+          </div>
+        </header>
+        <main className="workspace">{children}</main>
+      </div>
+    </div>
   );
 }
 

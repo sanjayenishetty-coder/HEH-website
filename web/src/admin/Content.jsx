@@ -1,22 +1,18 @@
 // Events, members and success stories: list + editor.
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Icon } from '../components/Icon.jsx';
 import { fmt } from '../lib/format.js';
 import { FormError, showErrors } from '../components/forms.jsx';
-import { label, useAdmin, useLoad, ViewState } from './Admin.jsx';
-import { Pill, YesNo } from './Submissions.jsx';
+import { useAdmin, useLoad, ViewState } from './Admin.jsx';
+import {
+  Avatar, DATE_RANGES, DataTable, FilterBar, PageHead, RowButton, StatCard, StatusPill, TypePill, When, eventStatus, matches, withinDays,
+} from './ui.jsx';
 
 // Field spec: [name, label, type, extra]. Types: text, textarea, date, time, url, image, select, check, lines, pairs, triples, photos, group
 const CONTENT = {
   events: {
     title: 'Events',
     single: 'Event',
-    head: ['Title', 'Date', 'Venue', 'Registrations', 'Registration open', 'Published'],
-    row: (e) => [
-      <><b>{e.title}</b><div className="sub">{e.category === 'workshop' ? 'Workshop' : 'Spotlight'} · /event?e={e.slug}</div></>,
-      fmt.date(e.event_date), e.venue_name,
-      <a href={`#registrations?event_id=${e.id}`} onClick={(ev) => ev.stopPropagation()}>{e.registrations}</a>,
-      <YesNo value={e.registration_open} />, <YesNo value={e.published} />,
-    ],
     publicUrl: (e) => `/event?e=${encodeURIComponent(e.slug)}`,
     defaults: { category: 'spotlight', members_only: true, registration_open: true, published: true, agenda: [], takeaways: [], photos: [] },
     fields: (meta) => [
@@ -42,10 +38,6 @@ const CONTENT = {
   members: {
     title: 'Members',
     single: 'Member',
-    head: ['Name', 'Membership ID', 'Company', 'Industry', 'Member type', 'Status'],
-    row: (m, meta) => [<><b>{m.full_name}</b><div className="sub">{m.designation}</div></>, m.member_code, m.company, m.industry,
-      (m.member_types || []).map((k) => (meta?.memberTypes || []).find(([key]) => key === k)?.[1] || k).join(', ') || '—',
-      <Pill status={m.status === 'active' ? 'yes' : 'no'} text={label(m.status)} />],
     publicUrl: (m) => `/member?m=${encodeURIComponent(m.slug)}`,
     defaults: { status: 'active', location: 'Hyderabad, Telangana', offers: [], opportunities: [], collaboration_interests: [], member_types: [], team_order: 0, sort_order: 0 },
     fields: (meta) => [
@@ -72,8 +64,6 @@ const CONTENT = {
   stories: {
     title: 'Success Stories',
     single: 'Story',
-    head: ['Title', 'Category', 'Published on', 'Featured', 'Published'],
-    row: (s) => [<b>{s.title}</b>, s.category, fmt.date(s.published_on), <YesNo value={s.featured} />, <YesNo value={s.published} />],
     publicUrl: (s) => `/story?s=${encodeURIComponent(s.slug)}`,
     defaults: { category: 'Business Collaboration', published: true, featured: false, members_involved: [], companies: [] },
     fields: (meta) => [
@@ -103,7 +93,7 @@ async function uploadFile(file, showLogin) {
   body.append('file', file);
   const res = await fetch('/api/admin/upload', { method: 'POST', body, credentials: 'same-origin' });
   const data = await res.json().catch(() => ({}));
-  if (res.status === 401) showLogin();
+  if (res.status === 401) showLogin(true);
   if (!res.ok) throw new Error(data.error || 'Upload failed');
   return data.url;
 }
@@ -287,40 +277,195 @@ function Editor({ name, item, onSaved }) {
   );
 }
 
-export default function Content({ name }) {
-  const { call, toast, openModal, reload, meta } = useAdmin();
-  const def = CONTENT[name];
+// ---------- List screens (designs: Part1 Events Management, Member Directory, Success Stories) ----------
+// Hash options: ?new=1 opens a blank editor, ?open=<id> opens that item, ?status=…, ?q=…
+
+const todayIst = () => new Date(Date.now() + 5.5 * 3600000).toISOString().slice(0, 10);
+const Thumb = ({ url }) => <span className="a-thumb" style={url ? { backgroundImage: `url('${url}')` } : undefined} />;
+
+const LISTS = {
+  events: {
+    title: 'Events Management',
+    sub: 'Manage HEH Spotlight, Workshop and community events.',
+    add: 'Create Event',
+    table: null, // tabs instead of a title
+    noun: 'events',
+    status: eventStatus,
+    stats: (items) => [
+      ['calendar', 'blue', 'Upcoming Events', items.filter((e) => eventStatus(e) === 'upcoming').length, 'Scheduled future events', 'upcoming'],
+      ['check-circle', 'green', 'Completed Events', items.filter((e) => eventStatus(e) === 'completed').length, 'Events already conducted', 'completed'],
+      ['users', 'orange', 'Total Registrations', items.reduce((n, e) => n + (e.registrations || 0), 0), 'Registrations across all events', null, 'registrations'],
+    ],
+    tabs: (items) => [['', 'All Events', items.length], ['spotlight', 'Spotlight', items.filter((e) => e.category !== 'workshop').length],
+      ['workshop', 'Workshop', items.filter((e) => e.category === 'workshop').length]],
+    tabMatch: (e, t) => !t || (t === 'workshop' ? e.category === 'workshop' : e.category !== 'workshop'),
+    search: 'Search event name…',
+    text: (e) => [e.title, e.venue_name, e.short_description],
+    statuses: [['upcoming', 'Upcoming'], ['completed', 'Completed'], ['draft', 'Draft']],
+    dates: { label: 'All Dates', options: [['future', 'Upcoming dates'], ['30', 'Next 30 days'], ['past', 'Past events']],
+      match: (e, v) => {
+        const d = String(e.event_date || '').slice(0, 10);
+        if (!v) return true;
+        if (!d) return false;
+        if (v === 'past') return d < todayIst();
+        if (v === 'future') return d >= todayIst();
+        return d >= todayIst() && d <= new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+      } },
+    action: 'Manage',
+    columns: [
+      { key: 'title', label: 'Event', sort: (e) => e.title, render: (e) => (
+        <span className="a-item"><Thumb url={e.image_url} /><span><b>{e.title}</b><small>{e.short_description}</small></span></span>
+      ) },
+      { key: 'type', label: 'Type', sort: (e) => e.category, render: (e) => <TypePill type={e.category} /> },
+      { key: 'date', label: 'Date & Time', sort: (e) => `${e.event_date}${e.start_time}`, render: (e) => <When date={e.event_date} start={e.start_time} end={e.end_time} /> },
+      { key: 'venue', label: 'Venue', sort: (e) => e.venue_name, render: (e) => (e.venue_name ? <span className="a-venue"><Icon name="pin" /> {e.venue_name}</span> : '—') },
+      { key: 'regs', label: 'Registrations', className: 'num', sort: (e) => e.registrations, render: (e) => (
+        <a href={`#registrations?event_id=${e.id}`} onClick={(ev) => ev.stopPropagation()}>{e.registrations}</a>
+      ) },
+    ],
+  },
+  members: {
+    title: 'Member Directory',
+    sub: 'Manage HEH members and their business profiles.',
+    add: 'Add Member',
+    table: 'Members',
+    noun: 'members',
+    status: (m) => (m.status === 'inactive' ? 'inactive' : 'active'),
+    stats: (items) => [
+      ['users', 'blue', 'Total Members', items.length, 'All registered members', ''],
+      ['users', 'green', 'Active Members', items.filter((m) => m.status !== 'inactive').length, 'Shown on the website', 'active'],
+      ['users', 'red', 'Inactive Members', items.filter((m) => m.status === 'inactive').length, 'Hidden from the website', 'inactive'],
+    ],
+    search: 'Search by member name or company…',
+    text: (m) => [m.full_name, m.company, m.member_code, m.designation],
+    statuses: [['active', 'Active'], ['inactive', 'Inactive']],
+    category: { label: 'All Categories', get: (m) => m.industry },
+    dates: { label: 'Join Date', options: DATE_RANGES, match: (m, v) => withinDays(m.created_at, v) },
+    action: 'View Profile',
+    columns: [
+      { key: 'name', label: 'Member', sort: (m) => m.full_name, render: (m) => (
+        <span className="a-who"><Avatar name={m.full_name} photo={m.photo_url} size={36} /><span>{m.full_name}<small>{m.member_code}</small></span></span>
+      ) },
+      { key: 'company', label: 'Company', sort: (m) => m.company, render: (m) => m.company },
+      { key: 'cat', label: 'Category', sort: (m) => m.industry, render: (m) => m.industry },
+      { key: 'des', label: 'Designation', sort: (m) => m.designation, render: (m) => m.designation },
+      { key: 'type', label: 'Member Type', sort: (m) => (m.member_types || []).join(), render: (m, meta) => (m.member_types || [])
+        .map((k) => (meta?.memberTypes || []).find(([key]) => key === k)?.[1] || k).join(', ') || '—' },
+      { key: 'joined', label: 'Joined On', sort: (m) => m.created_at, render: (m) => <span className="nowrap">{fmt.stamp(m.created_at).slice(0, 11)}</span> },
+    ],
+  },
+  stories: {
+    title: 'Success Stories',
+    sub: 'Showcase and manage member success stories.',
+    add: 'Add Success Story',
+    table: 'Success Stories',
+    noun: 'stories',
+    status: (s) => (s.published ? 'published' : 'draft'),
+    stats: (items) => [
+      ['star', 'blue', 'Total Stories', items.length, 'All success stories', ''],
+      ['check-circle', 'green', 'Published Stories', items.filter((s) => s.published).length, 'Visible on the website', 'published'],
+      ['file-edit', 'orange', 'Draft Stories', items.filter((s) => !s.published).length, 'Not yet published', 'draft'],
+    ],
+    search: 'Search story title or member…',
+    text: (s) => [s.title, s.category, ...(s.members_involved || [])],
+    statuses: [['published', 'Published'], ['draft', 'Draft']],
+    category: { label: 'All Categories', get: (s) => s.category },
+    action: 'Manage',
+    columns: [
+      { key: 'title', label: 'Story', sort: (s) => s.title, render: (s) => (
+        <span className="a-item"><Thumb url={s.image_url} /><span><b>{s.title}</b>{s.featured && <small className="feat"><Icon name="star" /> Featured</small>}</span></span>
+      ) },
+      { key: 'members', label: 'Members', sort: (s) => (s.members_involved || []).join(), render: (s) => (s.members_involved || []).join(', ') || '—' },
+      { key: 'cat', label: 'Category', sort: (s) => s.category, render: (s) => s.category },
+      { key: 'date', label: 'Published On', sort: (s) => s.published_on, render: (s) => <span className="nowrap">{fmt.date(s.published_on)}</span> },
+    ],
+  },
+};
+
+export default function Content({ name, query }) {
+  const { call } = useAdmin();
   const state = useLoad(() => call(`/${name}`));
+  return <ViewState state={state}>{({ items }) => <ContentList name={name} query={query} items={items} />}</ViewState>;
+}
+
+function ContentList({ name, query, items }) {
+  const { call, toast, openModal, reload, meta, go } = useAdmin();
+  const def = CONTENT[name];
+  const list = LISTS[name];
+  const [tab, setTab] = useState('');
+  const [filter, setFilter] = useState(() => ({ q: query.get('q') || '', status: query.get('status') || '', cat: '', dates: '' }));
 
   const edit = (item) => openModal(<Editor key={`${name}-${item.id || 'new'}-${Date.now()}`} name={name} item={item} onSaved={reload} />);
+  const open = async (it) => {
+    try { edit(await call(`/${name}/${it.id}`)); } catch (err) { toast(err.message, true); }
+  };
+
+  // ?new=1 / ?open=<id> from the dashboard; drop them from the address so a reload after saving doesn't reopen.
+  useEffect(() => {
+    const id = Number(query.get('open'));
+    if (query.get('new')) edit({ ...def.defaults });
+    else if (id) open({ id });
+    if (query.get('new') || id) {
+      const p = new URLSearchParams(query);
+      p.delete('new');
+      p.delete('open');
+      window.history.replaceState(null, '', `#${name}${p.toString() ? `?${p}` : ''}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const shown = useMemo(() => items.filter((it) => (
+    (!list.tabMatch || list.tabMatch(it, tab))
+    && matches(filter.q, ...list.text(it))
+    && (!filter.status || list.status(it) === filter.status)
+    && (!filter.cat || list.category?.get(it) === filter.cat)
+    && (!list.dates || list.dates.match(it, filter.dates))
+  )), [items, list, tab, filter]);
+
+  const cats = list.category ? [...new Set(items.map(list.category.get).filter(Boolean))].sort() : [];
+  const fields = [
+    { name: 'q', type: 'search', placeholder: list.search },
+    { name: 'status', all: 'All Status', options: list.statuses },
+    ...(list.category ? [{ name: 'cat', all: list.category.label, options: cats.map((c) => [c, c]) }] : []),
+    ...(list.dates ? [{ name: 'dates', all: list.dates.label, icon: 'calendar', options: list.dates.options }] : []),
+  ];
+  const columns = [
+    ...list.columns.map((c) => ({ ...c, render: (r) => c.render(r, meta) })),
+    { key: 'status', label: 'Status', sort: list.status, render: (r) => <StatusPill status={list.status(r)} /> },
+    { key: 'act', label: 'Action', className: 'act', render: (r) => (
+      <span className="a-acts">
+        <RowButton onClick={() => open(r)}>{list.action}</RowButton>
+        <a className="a-ext" href={def.publicUrl(r)} target="_blank" rel="noopener" title="Open on the website" onClick={(e) => e.stopPropagation()}><Icon name="external" /></a>
+      </span>
+    ) },
+  ];
+  const tabs = list.tabs && (
+    <div className="a-tabs" role="tablist">
+      {list.tabs(items).map(([k, text, n]) => (
+        <button key={text} type="button" role="tab" aria-selected={tab === k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{text} ({n})</button>
+      ))}
+    </div>
+  );
 
   return (
-    <ViewState state={state}>
-      {({ items }) => (
-        <>
-          <div className="bar">
-            <h1>{def.title} <span className="muted" style={{ fontSize: 18 }}>({items.length})</span></h1>
-            <button className="btn btn-primary btn-sm" onClick={() => edit({ ...def.defaults })}>+ Add {def.single}</button>
-          </div>
-          <div className="table-wrap">
-            <table className="data">
-              <thead><tr>{def.head.map((h) => <th key={h}>{h}</th>)}<th /></tr></thead>
-              <tbody>
-                {items.length ? items.map((it) => (
-                  <tr key={it.id} className="clickable" onClick={async () => {
-                    try { edit(await call(`/${name}/${it.id}`)); } catch (err) { toast(err.message, true); }
-                  }}>
-                    {def.row(it, meta).map((c, i) => <td key={i}>{c}</td>)}
-                    <td><a href={def.publicUrl(it)} target="_blank" rel="noopener" onClick={(e) => e.stopPropagation()}>View</a></td>
-                  </tr>
-                )) : (
-                  <tr><td colSpan={def.head.length + 1} className="muted" style={{ textAlign: 'center', padding: 30 }}>Nothing yet. Click “Add {def.single}”.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-    </ViewState>
+    <>
+      <PageHead title={list.title} sub={list.sub}>
+        <button className="btn btn-primary" type="button" onClick={() => edit({ ...def.defaults })}><Icon name="plus" /> {list.add}</button>
+      </PageHead>
+      <div className="a-stats">
+        {list.stats(items).map(([icon, tone, title, n, sub, status, hash]) => (
+          <StatCard key={title} icon={icon} tone={tone} title={title} value={n} sub={sub}
+            onClick={() => go(hash || `${name}${status ? `?status=${status}` : ''}`)} />
+        ))}
+      </div>
+      {tabs ? (
+        <section className="a-card a-tabbed">
+          {tabs}
+          <FilterBar fields={fields} value={filter} onApply={setFilter} />
+        </section>
+      ) : <FilterBar fields={fields} value={filter} onApply={setFilter} />}
+      <DataTable title={list.table} columns={columns} rows={shown} noun={list.noun} onRow={open}
+        empty={items.length ? 'Nothing matches these filters.' : `Nothing yet. Click “${list.add}”.`} />
+    </>
   );
 }

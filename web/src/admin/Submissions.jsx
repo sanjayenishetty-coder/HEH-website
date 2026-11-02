@@ -1,38 +1,96 @@
-// Membership applications, enquiries and event registrations: filter, change status, view details, notes, CSV.
-import { useRef, useState } from 'react';
+// Membership applications, enquiries and event registrations (designs: Part1 list screens):
+// summary cards, filters, sortable/paged table, CSV export, and a detail view to change status and notes.
+// Hash options: ?status=<status> (or "open" = still needs action), ?q=<search>, ?event_id=<id>, ?open=<row id>.
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Icon } from '../components/Icon.jsx';
 import { fmt } from '../lib/format.js';
-import { label, useAdmin, useLoad, ViewState } from './Admin.jsx';
+import { useAdmin, useLoad, ViewState } from './Admin.jsx';
+import {
+  Avatar, DATE_RANGES, DataTable, FilterBar, PageHead, RowButton, StatCard, StatusPill, matches, statusLabel, withinDays,
+} from './ui.jsx';
 
-export const Pill = ({ status, text }) => <span className={`pill ${status}`}>{text ?? label(status)}</span>;
-export const YesNo = ({ value }) => <Pill status={value ? 'yes' : 'no'} text={value ? 'Yes' : 'No'} />;
-
-const Sub = ({ children }) => <div className="sub">{children}</div>;
+const day = (ts) => fmt.stamp(ts).slice(0, 11);
+const Who = ({ name, sub }) => <span className="a-who"><Avatar name={name} size={32} /><span>{name}{sub && <small>{sub}</small>}</span></span>;
 
 const SUB = {
   applications: {
     title: 'Membership Applications',
-    head: ['Reference', 'Applicant', 'Company', 'Category', 'Submitted', 'Status'],
-    row: (r) => [<b>{r.ref}</b>, <>{r.full_name}<Sub>{r.mobile} · {r.email}</Sub></>, r.company_name, r.business_category, fmt.stamp(r.created_at)],
+    table: 'Membership Applications',
+    sub: 'Review and manage new membership requests.',
+    single: 'Application',
+    noun: 'applications',
+    open: ['received', 'under_review', 'interaction'],
+    stats: (rows) => [
+      ['file', 'blue', 'New Applications', rows.filter((r) => r.status === 'received').length, 'Awaiting initial review', 'received'],
+      ['user', 'orange', 'Under Review', rows.filter((r) => ['under_review', 'interaction'].includes(r.status)).length, 'Being evaluated by committee', 'under_review'],
+      ['check-circle', 'green', 'Approved Applications', rows.filter((r) => r.status === 'approved').length, 'Members approved', 'approved'],
+    ],
+    search: 'Search by applicant name or company…',
+    text: (r) => [r.ref, r.full_name, r.company_name, r.email, r.mobile],
+    category: { label: 'All Categories', get: (r) => r.business_category },
+    dateLabel: 'Application Date',
+    columns: [
+      { key: 'ref', label: 'Application ID', sort: (r) => r.ref, render: (r) => <b className="ref">{r.ref}</b> },
+      { key: 'name', label: 'Applicant', sort: (r) => r.full_name, render: (r) => <Who name={r.full_name} sub={r.email} /> },
+      { key: 'company', label: 'Company', sort: (r) => r.company_name, render: (r) => r.company_name },
+      { key: 'cat', label: 'Business Category', sort: (r) => r.business_category, render: (r) => r.business_category },
+      { key: 'date', label: 'Applied On', sort: (r) => r.created_at, render: (r) => <span className="nowrap">{day(r.created_at)}</span> },
+    ],
     detail: (r) => [['Reference', r.ref], ['Full name', r.full_name], ['Mobile', r.mobile], ['Email', r.email], ['Designation', r.designation], ['LinkedIn', r.linkedin],
       ['Company', r.company_name], ['Business category', r.business_category], ['Year established', r.year_established], ['Business location', r.business_location],
       ['Website', r.website], ['Annual turnover', r.turnover_range], ['Business description', r.business_description], ['Submitted', fmt.stamp(r.created_at)]],
     notes: true,
   },
   enquiries: {
-    title: 'Enquiries',
-    head: ['Reference', 'From', 'Type', 'Message', 'Submitted', 'Status'],
-    row: (r) => [<b>{r.ref}</b>, <>{r.full_name}<Sub>{r.mobile} · {r.email}{r.company ? ` · ${r.company}` : ''}</Sub></>,
-      <>{r.enquiry_type}{r.member_name && <Sub>For member: {r.member_name}</Sub>}</>,
-      <div style={{ maxWidth: 320 }}>{r.message.slice(0, 140)}{r.message.length > 140 ? '…' : ''}</div>, fmt.stamp(r.created_at)],
+    title: 'Enquiry Management',
+    table: 'Enquiries',
+    sub: 'Track and manage HEH community enquiries.',
+    single: 'Enquiry',
+    noun: 'enquiries',
+    open: ['received', 'in_progress'],
+    stats: (rows) => [
+      ['chat', 'blue', 'New Enquiries', rows.filter((r) => r.status === 'received').length, 'Awaiting a response', 'received'],
+      ['clock', 'orange', 'In Progress', rows.filter((r) => r.status === 'in_progress').length, 'Currently being handled', 'in_progress'],
+      ['check-circle', 'green', 'Resolved', rows.filter((r) => r.status === 'closed').length, 'Successfully closed', 'closed'],
+    ],
+    search: 'Search by name, company or message…',
+    text: (r) => [r.ref, r.full_name, r.company, r.email, r.mobile, r.message, r.member_name],
+    category: { label: 'All Enquiry Types', get: (r) => r.enquiry_type },
+    dateLabel: 'Received Date',
+    columns: [
+      { key: 'ref', label: 'Enquiry ID', sort: (r) => r.ref, render: (r) => <b className="ref">{r.ref}</b> },
+      { key: 'name', label: 'Name', sort: (r) => r.full_name, render: (r) => <Who name={r.full_name} sub={r.mobile} /> },
+      { key: 'company', label: 'Company', sort: (r) => r.company, render: (r) => r.company || '—' },
+      { key: 'type', label: 'Enquiry Type', sort: (r) => r.enquiry_type, render: (r) => <>{r.enquiry_type}{r.member_name && <small className="sub">For {r.member_name}</small>}</> },
+      { key: 'date', label: 'Received On', sort: (r) => r.created_at, render: (r) => <span className="nowrap">{day(r.created_at)}</span> },
+    ],
     detail: (r) => [['Reference', r.ref], ['Full name', r.full_name], ['Mobile', r.mobile], ['Email', r.email], ['Company', r.company], ['Enquiry type', r.enquiry_type],
       ['For member', r.member_name], ['Message', r.message], ['Submitted', fmt.stamp(r.created_at)]],
     notes: true,
   },
   registrations: {
     title: 'Event Registrations',
-    head: ['Registration ID', 'Participant', 'Membership ID', 'Event', 'Registered', 'Status'],
-    row: (r) => [<b>{r.ref}</b>, <>{r.full_name}<Sub>{r.mobile}{r.email ? ` · ${r.email}` : ''} · {r.company}</Sub></>, r.membership_id,
-      <>{r.event_title}<Sub>{fmt.date(r.event_date)}</Sub></>, fmt.stamp(r.created_at)],
+    table: 'Registered Participants',
+    sub: 'Manage event participants, registrations and attendance.',
+    single: 'Registration',
+    noun: 'registrations',
+    open: ['confirmed'],
+    stats: (rows) => [
+      ['users', 'blue', 'Total Registrations', rows.filter((r) => r.status !== 'cancelled').length, 'All active registrations', ''],
+      ['check-circle', 'green', 'Confirmed', rows.filter((r) => r.status === 'confirmed').length, 'Confirmed participants', 'confirmed'],
+      ['user-check', 'orange', 'Attended', rows.filter((r) => r.status === 'attended').length, 'Participants marked present', 'attended'],
+    ],
+    search: 'Search participant name or company…',
+    text: (r) => [r.ref, r.full_name, r.company, r.email, r.mobile, r.membership_id],
+    dateLabel: 'Registration Date',
+    columns: [
+      { key: 'ref', label: 'Registration ID', sort: (r) => r.ref, render: (r) => <b className="ref">{r.ref}</b> },
+      { key: 'name', label: 'Participant', sort: (r) => r.full_name, render: (r) => <Who name={r.full_name} sub={r.mobile} /> },
+      { key: 'company', label: 'Company', sort: (r) => r.company, render: (r) => r.company },
+      { key: 'mid', label: 'Membership ID', sort: (r) => r.membership_id, render: (r) => r.membership_id },
+      { key: 'event', label: 'Event', sort: (r) => r.event_date, render: (r) => <>{r.event_title}<small className="sub">{fmt.date(r.event_date)}</small></> },
+      { key: 'date', label: 'Registered On', sort: (r) => r.created_at, render: (r) => <span className="nowrap">{day(r.created_at)}</span> },
+    ],
     detail: (r) => [['Registration ID', r.ref], ['Participant', r.full_name], ['Mobile', r.mobile], ['Email', r.email], ['Company', r.company], ['Membership ID', r.membership_id],
       ['Event', `${r.event_title} (${fmt.date(r.event_date)})`], ['Registered', fmt.stamp(r.created_at)]],
     notes: false,
@@ -49,114 +107,128 @@ function exportCsv(name, rows) {
   a.click();
 }
 
-function Detail({ name, def, row, onNotesSaved }) {
+function Detail({ name, def, row, statuses, onSaved }) {
   const { call, toast, closeModal } = useAdmin();
   const notes = useRef();
-  async function saveNotes() {
+  const status = useRef();
+  const [busy, setBusy] = useState(false);
+  async function save() {
+    const body = { status: status.current.value };
+    if (def.notes) body.admin_notes = notes.current.value;
+    setBusy(true);
     try {
-      const admin_notes = notes.current.value;
-      await call(`/${name}/${row.id}`, { method: 'PATCH', body: { admin_notes } });
-      onNotesSaved(admin_notes);
-      toast('Notes saved');
+      await call(`/${name}/${row.id}`, { method: 'PATCH', body });
+      onSaved(body);
+      toast(`${def.single} updated`);
       closeModal();
-    } catch (err) { toast(err.message, true); }
+    } catch (err) { toast(err.message, true); } finally { setBusy(false); }
   }
   return (
     <div className="editor detail">
-      <h2>{def.title.replace(/s$/, '')} {row.ref}</h2>
+      <div className="detail-head">
+        <div><span className="eyebrow-sm">{def.single}</span><h2>{row.full_name}</h2><span className="muted">{row.ref}</span></div>
+        <StatusPill status={row.status} />
+      </div>
       <dl>
         {def.detail(row).filter(([, v]) => v !== '' && v != null).map(([k, v]) => [<dt key={`t${k}`}>{k}</dt>, <dd key={`d${k}`}>{v}</dd>])}
-        <dt>Status</dt><dd><Pill status={row.status} /></dd>
       </dl>
-      {def.notes && (
-        <div className="field" style={{ marginTop: 18 }}>
-          <label htmlFor="notes">Internal notes (not visible to the applicant)</label>
-          <textarea className="input" id="notes" ref={notes} defaultValue={row.admin_notes || ''} />
+      <div className="form-grid" style={{ marginTop: 20 }}>
+        <div className="field">
+          <label htmlFor="d_status">Status</label>
+          <select className="input" id="d_status" ref={status} defaultValue={row.status}>
+            {statuses.map((s) => <option key={s} value={s}>{statusLabel(s)}</option>)}
+          </select>
         </div>
-      )}
+        {def.notes && (
+          <div className="field full">
+            <label htmlFor="notes">Internal notes (not visible to the {name === 'enquiries' ? 'sender' : 'applicant'})</label>
+            <textarea className="input" id="notes" ref={notes} defaultValue={row.admin_notes || ''} />
+          </div>
+        )}
+      </div>
       <div className="actions">
-        {def.notes && <button className="btn btn-primary btn-sm" onClick={saveNotes}>Save notes</button>}
-        <button className="btn btn-outline btn-sm" onClick={closeModal}>Close</button>
+        <button className="btn btn-outline btn-sm" type="button" onClick={closeModal}>Close</button>
+        <button className="btn btn-primary btn-sm" type="button" onClick={save} disabled={busy}>Save Changes</button>
       </div>
     </div>
   );
 }
 
 export default function Submissions({ name, query }) {
-  const { call, toast, openModal, go } = useAdmin();
-  const def = SUB[name];
+  const { call } = useAdmin();
   const state = useLoad(async () => {
-    const params = new URLSearchParams();
-    if (query.get('status')) params.set('status', query.get('status'));
-    if (query.get('event_id')) params.set('event_id', query.get('event_id'));
     const [data, events] = await Promise.all([
-      call(`/${name}?${params}`),
+      call(`/${name}`),
       name === 'registrations' ? call('/events') : Promise.resolve(null),
     ]);
     return { data, events };
   });
-  const [, force] = useState(0);
-
-  const setFilter = (key, value) => {
-    const p = new URLSearchParams(query);
-    if (value) p.set(key, value); else p.delete(key);
-    go(`${name}${p.toString() ? `?${p}` : ''}`);
-  };
-
-  async function changeStatus(row, status) {
-    try {
-      await call(`/${name}/${row.id}`, { method: 'PATCH', body: { status } });
-      row.status = status;
-      force((n) => n + 1);
-      toast('Status updated');
-    } catch (err) { toast(err.message, true); }
-  }
-
   return (
     <ViewState state={state}>
-      {({ data, events }) => {
-        const rows = data.items;
-        return (
-          <>
-            <div className="bar">
-              <h1>{def.title} <span className="muted" style={{ fontSize: 18 }}>({rows.length})</span></h1>
-              <div className="filters">
-                {events && (
-                  <select className="input" value={query.get('event_id') || ''} onChange={(e) => setFilter('event_id', e.target.value)}>
-                    <option value="">All events</option>
-                    {events.items.map((e) => <option key={e.id} value={e.id}>{e.title} – {fmt.date(e.event_date)}</option>)}
-                  </select>
-                )}
-                <select className="input" value={query.get('status') || ''} onChange={(e) => setFilter('status', e.target.value)}>
-                  <option value="">All statuses</option>
-                  {data.statuses.map((s) => <option key={s} value={s}>{label(s)}</option>)}
-                </select>
-                <button className="btn btn-outline btn-sm" onClick={() => exportCsv(name, rows)}>Export CSV</button>
-              </div>
-            </div>
-            <div className="table-wrap">
-              <table className="data">
-                <thead><tr>{def.head.map((h) => <th key={h}>{h}</th>)}</tr></thead>
-                <tbody>
-                  {rows.length ? rows.map((r) => (
-                    <tr key={r.id} className="clickable"
-                      onClick={() => openModal(<Detail name={name} def={def} row={r} onNotesSaved={(n) => { r.admin_notes = n; }} />)}>
-                      {def.row(r).map((c, i) => <td key={i}>{c}</td>)}
-                      <td>
-                        <select className="input" value={r.status} onClick={(e) => e.stopPropagation()} onChange={(e) => changeStatus(r, e.target.value)}>
-                          {data.statuses.map((s) => <option key={s} value={s}>{label(s)}</option>)}
-                        </select>
-                      </td>
-                    </tr>
-                  )) : (
-                    <tr><td colSpan={def.head.length} className="muted" style={{ textAlign: 'center', padding: 30 }}>Nothing here yet.</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </>
-        );
-      }}
+      {({ data, events }) => <List name={name} query={query} data={data} events={events} />}
     </ViewState>
+  );
+}
+
+function List({ name, query, data, events }) {
+  const { openModal, go } = useAdmin();
+  const def = SUB[name];
+  const [rows, setRows] = useState(data.items);
+  const [filter, setFilter] = useState(() => ({
+    q: query.get('q') || '', status: query.get('status') || '', cat: '', days: '', event: query.get('event_id') || '',
+  }));
+
+  const show = (r) => openModal(
+    <Detail key={r.id} name={name} def={def} row={r} statuses={data.statuses}
+      onSaved={(changes) => setRows((list) => list.map((x) => (x.id === r.id ? { ...x, ...changes } : x)))} />,
+  );
+  // #applications?open=12 (from the dashboard) opens that row.
+  useEffect(() => {
+    const id = Number(query.get('open'));
+    const r = id && rows.find((x) => x.id === id);
+    if (r) show(r);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const shown = useMemo(() => rows.filter((r) => (
+    matches(filter.q, ...def.text(r))
+    && (!filter.status || (filter.status === 'open' ? def.open.includes(r.status) : r.status === filter.status))
+    && (!filter.cat || def.category?.get(r) === filter.cat)
+    && (!filter.event || String(r.event_id) === String(filter.event))
+    && withinDays(r.created_at, filter.days)
+  )), [rows, filter, def]);
+
+  const cats = def.category ? [...new Set(rows.map(def.category.get).filter(Boolean))].sort() : [];
+  const fields = [
+    { name: 'q', type: 'search', placeholder: def.search },
+    ...(events ? [{ name: 'event', all: 'All Events', options: events.items.map((e) => [String(e.id), `${e.title} – ${fmt.date(e.event_date)}`]) }] : []),
+    { name: 'status', all: 'All Status', options: [['open', name === 'registrations' ? 'Confirmed' : 'Needs action'], ...data.statuses.map((s) => [s, statusLabel(s)])].filter(([v], i, a) => a.findIndex(([w]) => w === v) === i) },
+    ...(def.category ? [{ name: 'cat', all: def.category.label, options: cats.map((c) => [c, c]) }] : []),
+    { name: 'days', all: def.dateLabel, icon: 'calendar', options: DATE_RANGES },
+  ];
+
+  const columns = [
+    ...def.columns,
+    { key: 'status', label: 'Status', sort: (r) => r.status, render: (r) => <StatusPill status={r.status} /> },
+    { key: 'act', label: 'Action', className: 'act', render: (r) => <RowButton onClick={() => show(r)} /> },
+  ];
+
+  return (
+    <>
+      <PageHead title={def.title} sub={def.sub}>
+        <button className="btn btn-primary" type="button" onClick={() => exportCsv(name, shown)} disabled={!shown.length}>
+          <Icon name="download" /> Export {def.noun[0].toUpperCase() + def.noun.slice(1)}
+        </button>
+      </PageHead>
+      <div className="a-stats">
+        {def.stats(rows).map(([icon, tone, title, n, sub, status]) => (
+          <StatCard key={title} icon={icon} tone={tone} title={title} value={n} sub={sub}
+            onClick={() => go(`${name}${status ? `?status=${status}` : ''}`)} />
+        ))}
+      </div>
+      <FilterBar fields={fields} value={filter} onApply={setFilter} />
+      <DataTable title={def.table} columns={columns} rows={shown} noun={def.noun} onRow={show}
+        empty={rows.length ? 'Nothing matches these filters.' : `No ${def.noun} yet.`} />
+    </>
   );
 }

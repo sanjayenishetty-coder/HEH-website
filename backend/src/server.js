@@ -2,6 +2,7 @@ const express = require('express');
 const helmet = require('helmet');
 const config = require('./config');
 const { pool } = require('./db');
+const auth = require('./auth');
 
 const app = express();
 app.set('trust proxy', 'loopback');
@@ -31,6 +32,8 @@ app.use((err, req, res, next) => {
 
 const server = app.listen(config.port, config.host, () => {
   console.log(`HEH API listening on http://${config.host}:${config.port}`);
+  // Create the first admin account from .env if the admin_users table is still empty.
+  auth.ensureFirstAdmin().catch((err) => console.error('admin account setup failed:', err.message));
 });
 
 const shutdown = () => server.close(() => pool.end().then(() => process.exit(0)));

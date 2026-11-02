@@ -13,6 +13,7 @@ export async function api(path, opts = {}) {
     const err = new Error((data && data.error) || `Request failed (${res.status})`);
     err.status = res.status;
     err.errors = data && data.errors;
+    err.expired = Boolean(data && data.expired);
     throw err;
   }
   return data;

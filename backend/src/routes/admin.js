@@ -6,29 +6,152 @@ const multer = require('multer');
 const rateLimit = require('express-rate-limit');
 const { query } = require('../db');
 const auth = require('../auth');
-const { uploadDir } = require('../config');
+const mail = require('../mail');
+const config = require('../config');
+const { uploadDir } = config;
 const C = require('../constants');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 const bad = (res, error) => res.status(400).json({ error });
 
-// ---------- Login ----------
+// ---------- Sign-in, security codes, password reset, Google ----------
+// Screens: web/src/admin/Login.jsx (designs in images/Admin Login/.../Modified Login Page Designs).
 
-const loginLimiter = rateLimit({
+const limiter = (limit, error) => rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: { error: 'Too many sign-in attempts. Try again in 15 minutes.' },
+  message: { error },
+});
+const loginLimiter = limiter(10, 'Too many sign-in attempts. Try again in 15 minutes.');
+const codeLimiter = limiter(20, 'Too many attempts. Try again in 15 minutes.');
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+async function sendCode(email, kind, code) {
+  const verify = kind === 'verify';
+  await mail.send(email, verify ? 'Verify your email – HEH Portal' : 'Your HEH Portal security code', {
+    title: verify ? 'Verify your email' : 'Security verification',
+    lines: [
+      `Enter this 6-digit code to ${verify ? 'verify your email address and ' : ''}finish signing in to the HEH Portal:`,
+      'The code expires in 10 minutes. If you did not try to sign in, change your password.',
+    ],
+    code,
+  });
+}
+
+// Which sign-in options this server has set up (the login page hides the rest).
+router.get('/auth-options', (req, res) => {
+  res.json({ google: config.googleClientId || null, mail: mail.enabled });
 });
 
 router.post('/login', loginLimiter, wrap(async (req, res) => {
   const { username, password } = req.body || {};
-  if (!(await auth.checkCredentials(username, password))) {
-    return res.status(401).json({ error: 'Incorrect username or password.' });
+  const admin = await auth.checkCredentials(username, password);
+  if (!admin) return res.status(401).json({ error: 'Incorrect username or password.' });
+
+  // With email set up: verify the address once, then (if ADMIN_LOGIN_CODE=1) a code at every sign-in.
+  const step = mail.enabled && admin.email
+    ? (!admin.email_verified_at ? 'verify' : config.adminLoginCode ? 'login' : null)
+    : null;
+  if (step) {
+    const { token, code } = await auth.createToken(admin.id, step);
+    try {
+      await sendCode(admin.email, step, code);
+      return res.json({ step, token, email: auth.maskEmail(admin.email) });
+    } catch (err) {
+      console.error(new Date().toISOString(), 'admin code email failed', err.message);
+      // Verifying the address is not a security gate, so a mail problem must not lock the admin out.
+      if (step === 'login') return res.status(502).json({ error: 'Could not send the security code. Please try again shortly.' });
+    }
   }
-  auth.issue(res, req);
+  auth.issue(res, req, admin);
+  res.json({ ok: true });
+}));
+
+router.post('/login/code', codeLimiter, wrap(async (req, res) => {
+  const { token, code } = req.body || {};
+  const row = await auth.findToken(token, ['login', 'verify']);
+  if (!row) return res.status(400).json({ error: 'This code has expired. Please sign in again.', expired: true });
+  const result = await auth.checkCode(row, String(code || '').replace(/\D/g, ''));
+  if (result === 'locked') return res.status(400).json({ error: 'Too many incorrect codes. Please sign in again.', expired: true });
+  if (result === 'wrong') return res.status(400).json({ error: 'Incorrect code. Please check the code and try again.' });
+  if (row.kind === 'verify') await query('UPDATE admin_users SET email_verified_at = now(), updated_at = now() WHERE id = $1', [row.admin_id]);
+  auth.issue(res, req, { id: row.admin_id, username: row.username });
+  res.json({ ok: true });
+}));
+
+router.post('/login/resend', codeLimiter, wrap(async (req, res) => {
+  const row = await auth.findToken((req.body || {}).token, ['login', 'verify']);
+  if (!row) return res.status(400).json({ error: 'This code has expired. Please sign in again.', expired: true });
+  if (Date.now() - new Date(row.sent_at).getTime() < 30 * 1000) {
+    return res.status(429).json({ error: 'Please wait 30 seconds before asking for another code.' });
+  }
+  await sendCode(row.email, row.kind, await auth.renewCode(row));
+  res.json({ ok: true, email: auth.maskEmail(row.email) });
+}));
+
+router.post('/password/forgot', loginLimiter, wrap(async (req, res) => {
+  const email = String((req.body || {}).email || '').trim();
+  if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'Enter a valid email address.', errors: { email: 'Enter a valid email address.' } });
+  if (!mail.enabled) return res.status(503).json({ error: 'Password reset by email is not set up yet. Please contact the site administrator.' });
+  const admin = await auth.findAdmin(email);
+  // Same answer whether or not the address belongs to an admin, so this can't be used to find accounts.
+  if (admin && admin.email && admin.email.toLowerCase() === email.toLowerCase()) {
+    const { token } = await auth.createToken(admin.id, 'reset');
+    const url = `${config.siteUrl}/admin/?reset=${encodeURIComponent(token)}`;
+    await mail.send(admin.email, 'Reset your HEH Portal password', {
+      title: 'Reset your password',
+      lines: [
+        'We received a request to reset the password for your HEH Portal account. Use the button below to choose a new password:',
+        'This link expires in 30 minutes and can be used once. If you did not ask for this, you can ignore this email; your password will not change.',
+      ],
+      button: { text: 'Reset Password', url },
+    }).catch((err) => console.error(new Date().toISOString(), 'reset email failed', err.message));
+  }
+  res.json({ ok: true, email: auth.maskEmail(email) });
+}));
+
+// The reset page checks its link before showing the form.
+router.post('/password/reset/check', codeLimiter, wrap(async (req, res) => {
+  const row = await auth.findToken((req.body || {}).token, ['reset']);
+  if (!row) return res.status(400).json({ error: 'This reset link has expired or has already been used. Please request a new one.' });
+  res.json({ ok: true });
+}));
+
+router.post('/password/reset', codeLimiter, wrap(async (req, res) => {
+  const { token } = req.body || {};
+  const password = String((req.body || {}).password || '').trim();
+  const confirm = String((req.body || {}).confirm || '').trim();
+  const row = await auth.findToken(token, ['reset']);
+  if (!row) return res.status(400).json({ error: 'This reset link has expired or has already been used. Please request a new one.' });
+  const errors = {};
+  if (password.length < 8 || password.length > 200 || !/[a-z]/i.test(password) || !/\d/.test(password)) {
+    errors.password = 'Use at least 8 characters with letters and numbers.';
+  } else if (confirm !== password) {
+    errors.confirm = 'The passwords do not match.';
+  }
+  if (Object.keys(errors).length) return res.status(400).json({ error: 'Please check the highlighted fields.', errors });
+  await auth.setPassword(row.admin_id, password);
+  res.json({ ok: true });
+}));
+
+// Google: the browser gets an access token from Google's popup; we ask Google which app and account it is for.
+router.post('/login/google', loginLimiter, wrap(async (req, res) => {
+  if (!config.googleClientId) return res.status(404).json({ error: 'Google sign-in is not set up.' });
+  const accessToken = String((req.body || {}).access_token || '');
+  if (!accessToken) return bad(res, 'Google sign-in failed. Please try again.');
+  const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(accessToken)}`);
+  const info = r.ok ? await r.json() : {};
+  if (info.aud !== config.googleClientId || String(info.email_verified) !== 'true' || !info.email) {
+    return res.status(401).json({ error: 'Google sign-in failed. Please try again.' });
+  }
+  const admin = await auth.findAdmin(info.email);
+  if (!admin || String(admin.email || '').toLowerCase() !== info.email.toLowerCase()) {
+    return res.status(403).json({ error: `${info.email} is not an HEH admin account.` });
+  }
+  auth.issue(res, req, admin);
   res.json({ ok: true });
 }));
 
@@ -37,11 +160,11 @@ router.post('/logout', (req, res) => {
   res.json({ ok: true });
 });
 
-router.get('/me', (req, res) => {
-  const s = auth.read(req);
-  if (!s) return res.status(401).json({ error: 'Please sign in.' });
-  res.json({ user: s.u });
-});
+router.get('/me', wrap(async (req, res) => {
+  const admin = await auth.session(req);
+  if (!admin) return res.status(401).json({ error: 'Please sign in.' });
+  res.json({ user: admin.username });
+}));
 
 router.use(auth.requireAdmin);
 
@@ -105,7 +228,7 @@ const resources = {
       agenda: asJsonArray, speaker: asJsonObject, featured: asJsonObject, takeaways: asJsonArray, photos: asJsonArray,
       published: asBool,
     },
-    listCols: `id, slug, title, category, event_date, start_time, venue_name, published, registration_open,
+    listCols: `id, slug, title, category, event_date, start_time, end_time, venue_name, image_url, short_description, published, registration_open,
       (SELECT count(*)::int FROM event_registrations r WHERE r.event_id = events.id AND r.status <> 'cancelled') AS registrations`,
   },
   members: {
@@ -123,7 +246,7 @@ const resources = {
       member_types: (v) => JSON.stringify(C.memberTypes.map(([k]) => k).filter((k) => Array.isArray(v) && v.includes(k))),
       team_role: asText, team_order: asInt,
     },
-    listCols: 'id, slug, member_code, full_name, designation, company, industry, status, member_types',
+    listCols: 'id, slug, member_code, full_name, designation, company, industry, status, member_types, photo_url, created_at',
   },
   stories: {
     table: 'stories',
@@ -135,7 +258,7 @@ const resources = {
       members_involved: asJsonArray, companies: asJsonArray, business_category: asText,
       featured: asBool, published_on: (v) => asDate(v) || new Date().toISOString().slice(0, 10), published: asBool,
     },
-    listCols: 'id, slug, title, category, published_on, featured, published',
+    listCols: 'id, slug, title, category, published_on, featured, published, image_url, members_involved',
   },
 };
 
@@ -267,17 +390,38 @@ for (const [name, def] of Object.entries(submissions)) {
   }));
 }
 
+// Dashboard: counts for the cards, upcoming events, latest applications and a recent-activity feed.
 router.get('/summary', wrap(async (req, res) => {
-  const { rows } = await query(`
-    SELECT
-      (SELECT count(*)::int FROM membership_applications WHERE status = 'received') AS new_applications,
-      (SELECT count(*)::int FROM enquiries WHERE status = 'received') AS new_enquiries,
-      (SELECT count(*)::int FROM event_registrations r JOIN events e ON e.id = r.event_id
-        WHERE r.status = 'confirmed' AND e.event_date >= current_date) AS upcoming_registrations,
-      (SELECT count(*)::int FROM events WHERE event_date >= current_date) AS upcoming_events,
-      (SELECT count(*)::int FROM members WHERE status = 'active') AS active_members,
-      (SELECT count(*)::int FROM stories WHERE published) AS published_stories`);
-  res.json(rows[0]);
+  const [counts, events, applications, activity] = await Promise.all([
+    query(`
+      SELECT
+        (SELECT count(*)::int FROM membership_applications WHERE status = 'received') AS new_applications,
+        (SELECT count(*)::int FROM membership_applications WHERE status IN ('received', 'under_review', 'interaction')) AS pending_applications,
+        (SELECT count(*)::int FROM enquiries WHERE status = 'received') AS new_enquiries,
+        (SELECT count(*)::int FROM enquiries WHERE status IN ('received', 'in_progress')) AS open_enquiries,
+        (SELECT count(*)::int FROM event_registrations r JOIN events e ON e.id = r.event_id
+          WHERE r.status = 'confirmed' AND e.event_date >= current_date) AS upcoming_registrations,
+        (SELECT count(*)::int FROM event_registrations WHERE status = 'confirmed' AND created_at > now() - interval '7 days') AS recent_registrations,
+        (SELECT count(*)::int FROM events WHERE event_date >= current_date) AS upcoming_events,
+        (SELECT count(*)::int FROM members WHERE status = 'active') AS active_members,
+        (SELECT count(*)::int FROM stories WHERE published) AS published_stories`),
+    query(`
+      SELECT id, slug, title, category, event_date, start_time, end_time, venue_name, image_url, published,
+        (SELECT count(*)::int FROM event_registrations r WHERE r.event_id = events.id AND r.status <> 'cancelled') AS registrations
+      FROM events WHERE event_date >= current_date ORDER BY event_date, start_time LIMIT 3`),
+    query(`
+      SELECT id, ref, full_name, company_name, business_category, status, created_at
+      FROM membership_applications ORDER BY created_at DESC LIMIT 5`),
+    query(`
+      SELECT * FROM (
+        SELECT 'application' AS kind, full_name AS who, company_name AS detail, created_at AS at FROM membership_applications
+        UNION ALL SELECT 'enquiry', full_name, enquiry_type, created_at FROM enquiries
+        UNION ALL SELECT 'registration', r.full_name, e.title, r.created_at FROM event_registrations r JOIN events e ON e.id = r.event_id
+        UNION ALL SELECT 'event', title, venue_name, created_at FROM events
+        UNION ALL SELECT 'member', full_name, company, created_at FROM members
+      ) a ORDER BY at DESC LIMIT 6`),
+  ]);
+  res.json({ ...counts.rows[0], events: events.rows, applications: applications.rows, activity: activity.rows });
 }));
 
 router.get('/meta', (req, res) => {
