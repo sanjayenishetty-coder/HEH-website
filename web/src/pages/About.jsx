@@ -23,9 +23,11 @@ export default function About() {
         <div className="container">
           <h2 className="rule">About Us</h2>
           <div className="body">
-            <p>Hyderabad Entrepreneurs Hub is a business networking community committed to bringing genuine entrepreneurs and business leaders together on a common platform.</p>
-            <p>HEH aims to create an environment where members can build trusted relationships, share business insights, learn from experienced professionals and explore opportunities for mutual growth.</p>
-            <p>Our approach goes beyond conventional networking by encouraging meaningful engagement, knowledge sharing, collaboration and active participation among members.</p>
+            <p className="tagline">Building Connections. Creating Opportunities. Enabling Growth.</p>
+            <p>Hyderabad Entrepreneurs Hub (HEH) is a professionally driven business networking platform that brings together entrepreneurs, business owners, startup founders, corporate leaders and accomplished professionals to foster meaningful business relationships and create opportunities for collective growth.</p>
+            <p>HEH serves as a collaborative ecosystem where business leaders connect, exchange industry insights, gain access to experienced mentors and explore strategic partnerships, business collaborations and new growth opportunities.</p>
+            <p>Through structured networking engagements, leadership interactions, knowledge-sharing initiatives, expert-led sessions and business development programmes, HEH facilitates an environment that encourages purposeful connections, continuous learning and professional excellence.</p>
+            <p>We believe that sustainable business growth is built on trust, shared knowledge and meaningful collaboration. HEH is committed to strengthening the entrepreneurial ecosystem by connecting the right people, ideas and opportunities.</p>
           </div>
         </div>
       </section>
