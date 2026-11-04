@@ -23,7 +23,7 @@ export default function Dashboard() {
       {(s) => (
         <>
           <PageHead title={`Welcome Back, ${name}`} sub="Here’s what’s happening across the HEH community.">
-            <button className="btn btn-primary" type="button" onClick={() => go('events?new=1')}><Icon name="plus" /> Create Event</button>
+            <button className="btn btn-primary" type="button" onClick={() => go('events/new')}><Icon name="plus" /> Create Event</button>
           </PageHead>
 
           <div className="a-stats five">

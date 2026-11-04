@@ -11,13 +11,14 @@ const WHO = [
 ];
 
 const BENEFITS = [
-  'Connect with entrepreneurs and business leaders across industries.',
-  'Showcase your business through approved member features and community initiatives.',
-  'Participate in structured networking meetings and member interactions.',
-  'Learn from the experiences and insights of fellow entrepreneurs.',
-  'Explore business collaborations, partnerships and referrals.',
-  'Build long-term professional relationships within a curated business community.',
-  'Attend expert sessions, workshops and mentorship programmes, subject to eligibility.',
+  'Connect with entrepreneurs, business owners and industry leaders across diverse sectors.',
+  'Participate in structured business networking meetings and member interactions.',
+  'Opportunities to introduce and showcase your business through HEH initiatives, subject to approval.',
+  'Exchange business knowledge, experiences and industry insights with fellow members.',
+  'Explore potential business collaborations, partnerships and professional referrals.',
+  'Build meaningful and long-term professional relationships.',
+  'Participate in expert sessions, workshops and learning programmes organised by HEH.',
+  'Avail preferential member pricing on HEH events, workshops and annual business summits.',
 ];
 
 const STEPS = [
@@ -53,6 +54,7 @@ export default function Membership() {
       <section className="section divided" id="why-heh">
         <div className="container">
           <h2 className="rule">Membership Benefits</h2>
+          <p className="section-lead">Be part of a professional business community that encourages meaningful networking, knowledge sharing and continuous learning.</p>
           <div className="card">
             <ul className="dot-list">{BENEFITS.map((t) => <li key={t}>{t}</li>)}</ul>
           </div>

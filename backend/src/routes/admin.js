@@ -10,6 +10,7 @@ const mail = require('../mail');
 const config = require('../config');
 const { uploadDir } = config;
 const C = require('../constants');
+const activity = require('../activity');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -203,6 +204,8 @@ const asTime = (v) => (/^\d{2}:\d{2}(:\d{2})?$/.test(asText(v)) ? asText(v) : nu
 const asJsonArray = (v) => JSON.stringify(Array.isArray(v) ? v : []);
 const asJsonObject = (v) => (v && typeof v === 'object' && !Array.isArray(v) && Object.values(v).some((x) => asText(x)) ? JSON.stringify(v) : null);
 const asInt = (v) => (Number.isInteger(Number(v)) ? Number(v) : 0);
+const asCapacity = (v) => (asText(v) !== '' && Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null);
+const asId = (v) => (Number.isInteger(Number(v)) && Number(v) > 0 ? Number(v) : null);
 const asImage = (v) => {
   const s = asText(v);
   // /uploads/ = uploaded in admin; /assets/ = shipped with the site (e.g. core team photos)
@@ -227,8 +230,13 @@ const resources = {
       members_only: asBool, registration_open: asBool,
       agenda: asJsonArray, speaker: asJsonObject, featured: asJsonObject, takeaways: asJsonArray, photos: asJsonArray,
       published: asBool,
+      coordinator: asText, city: asText, capacity: asCapacity,
+      registration_opens: asDate, registration_closes: asDate,
+      approval_mode: (v) => (v === 'manual' ? 'manual' : 'auto'),
     },
     listCols: `id, slug, title, category, event_date, start_time, end_time, venue_name, image_url, short_description, published, registration_open,
+      capacity, approval_mode, coordinator,
+      (SELECT count(*)::int FROM event_registrations r WHERE r.event_id = events.id AND r.status = 'pending') AS pending,
       (SELECT count(*)::int FROM event_registrations r WHERE r.event_id = events.id AND r.status <> 'cancelled') AS registrations`,
   },
   members: {
@@ -257,8 +265,10 @@ const resources = {
       summary: asText, body: asText, image_url: asImage,
       members_involved: asJsonArray, companies: asJsonArray, business_category: asText,
       featured: asBool, published_on: (v) => asDate(v) || new Date().toISOString().slice(0, 10), published: asBool,
+      member_id: asId, publish_permission: asBool,
     },
-    listCols: 'id, slug, title, category, published_on, featured, published, image_url, members_involved',
+    listCols: `id, slug, title, category, published_on, featured, published, archived, image_url, members_involved, member_id, created_at, updated_at,
+      (SELECT full_name FROM members m WHERE m.id = stories.member_id) AS member_name`,
   },
 };
 
@@ -278,6 +288,8 @@ async function uniqueSlug(table, base, excludeId = 0) {
     slug = `${base}-${i}`;
   }
 }
+
+const SINGLE = { events: 'Event', members: 'Member', stories: 'Story' };
 
 for (const [name, def] of Object.entries(resources)) {
   router.get(`/${name}`, wrap(async (req, res) => {
@@ -301,6 +313,7 @@ for (const [name, def] of Object.entries(resources)) {
       `INSERT INTO ${def.table} (${cols.join(', ')}) VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')}) RETURNING *`,
       Object.values(data)
     );
+    await activity.log(req, name, `${SINGLE[name]} Created`, { id: rows[0].id, ref: rows[0][def.titleField] });
     res.status(201).json(rows[0]);
   }));
 
@@ -316,12 +329,14 @@ for (const [name, def] of Object.entries(resources)) {
       [...Object.values(data), req.params.id]
     );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    await activity.log(req, name, `${SINGLE[name]} Updated`, { id: rows[0].id, ref: rows[0][def.titleField] });
     res.json(rows[0]);
   }));
 
   router.delete(`/${name}/:id(\\d+)`, wrap(async (req, res) => {
-    const { rowCount } = await query(`DELETE FROM ${def.table} WHERE id = $1`, [req.params.id]);
-    if (!rowCount) return res.status(404).json({ error: 'Not found' });
+    const { rows } = await query(`DELETE FROM ${def.table} WHERE id = $1 RETURNING id, ${def.titleField} AS title`, [req.params.id]);
+    if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    await activity.log(req, name, `${SINGLE[name]} Deleted`, { id: rows[0].id, ref: rows[0].title });
     res.json({ ok: true });
   }));
 }
@@ -336,12 +351,13 @@ const submissions = {
   },
   enquiries: {
     table: 'enquiries',
-    select: `SELECT q.*, m.full_name AS member_name FROM enquiries q LEFT JOIN members m ON m.id = q.member_id`,
+    select: `SELECT q.*, m.full_name AS member_name, a.username AS assigned_name
+      FROM enquiries q LEFT JOIN members m ON m.id = q.member_id LEFT JOIN admin_users a ON a.id = q.assigned_to`,
     statuses: C.statuses.enquiries,
   },
   registrations: {
     table: 'event_registrations',
-    select: `SELECT r.*, e.title AS event_title, e.event_date FROM event_registrations r JOIN events e ON e.id = r.event_id`,
+    select: `SELECT r.*, e.title AS event_title, e.event_date, e.category AS event_category FROM event_registrations r JOIN events e ON e.id = r.event_id`,
     statuses: C.statuses.registrations,
   },
 };
@@ -375,17 +391,20 @@ for (const [name, def] of Object.entries(submissions)) {
       params.push(status);
       sets.push(`status = $${params.length}`);
     }
-    if (admin_notes !== undefined && name !== 'registrations') {
+    if (admin_notes !== undefined) {
       params.push(asText(admin_notes).slice(0, 2000));
       sets.push(`admin_notes = $${params.length}`);
     }
     if (!sets.length) return bad(res, 'Nothing to update.');
     params.push(req.params.id);
     const { rows } = await query(
-      `UPDATE ${def.table} SET ${sets.join(', ')}, updated_at = now() WHERE id = $${params.length} RETURNING id, status`,
+      `UPDATE ${def.table} SET ${sets.join(', ')}, updated_at = now() WHERE id = $${params.length} RETURNING id, ref, status`,
       params
     );
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
+    await activity.log(req, name, status !== undefined ? 'Status Changed' : 'Notes Updated', {
+      id: rows[0].id, ref: rows[0].ref, details: status !== undefined ? `Status set to ${status.replace('_', ' ')}` : '',
+    });
     res.json(rows[0]);
   }));
 }
@@ -402,6 +421,7 @@ router.get('/summary', wrap(async (req, res) => {
         (SELECT count(*)::int FROM event_registrations r JOIN events e ON e.id = r.event_id
           WHERE r.status = 'confirmed' AND e.event_date >= current_date) AS upcoming_registrations,
         (SELECT count(*)::int FROM event_registrations WHERE status = 'confirmed' AND created_at > now() - interval '7 days') AS recent_registrations,
+        (SELECT count(*)::int FROM event_registrations WHERE status = 'pending') AS pending_registrations,
         (SELECT count(*)::int FROM events WHERE event_date >= current_date) AS upcoming_events,
         (SELECT count(*)::int FROM members WHERE status = 'active') AS active_members,
         (SELECT count(*)::int FROM stories WHERE published) AS published_stories`),
@@ -425,8 +445,18 @@ router.get('/summary', wrap(async (req, res) => {
 }));
 
 router.get('/meta', (req, res) => {
-  res.json({ industries: C.industries, storyCategories: C.storyCategories, eventCategories: C.eventCategories, memberTypes: C.memberTypes });
+  res.json({
+    industries: C.industries, storyCategories: C.storyCategories, eventCategories: C.eventCategories, memberTypes: C.memberTypes,
+    enquiryTypes: C.enquiryTypes, statuses: C.statuses,
+    registrationRejectReasons: C.registrationRejectReasons, registrationCancelReasons: C.registrationCancelReasons,
+    enquiryPriorities: C.enquiryPriorities, enquiryChannels: C.enquiryChannels, enquiryOutcomes: C.enquiryOutcomes,
+    enquiryCloseReasons: C.enquiryCloseReasons, enquiryReopenReasons: C.enquiryReopenReasons,
+    storyArchiveReasons: C.storyArchiveReasons, reportTypes: C.reportTypes, mail: mail.enabled,
+  });
 });
+
+// Part2 workflows (approve / assign / publish / archive, reports).
+router.use(require('./workflows'));
 
 // Remove an uploaded file that is no longer referenced (best effort; only inside uploadDir).
 router.delete('/upload', wrap(async (req, res) => {

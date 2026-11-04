@@ -17,13 +17,17 @@ export default function WhoCanJoin() {
       <section className="page-hero">
         <div className="container">
           <span className="eyebrow tracked rule">Who Can Join</span>
-          <h1>Deliberately selective,<br /><span className="accent">so the room stays useful</span></h1>
-          <p className="why-lead">We keep the bar high so every conversation is between people running real businesses.</p>
+          <h1>Bringing Together Business Leaders.<br /><span className="accent">Building a Stronger Entrepreneurial Ecosystem.</span></h1>
+          <p className="why-lead">Hyderabad Entrepreneurs Hub (HEH) welcomes entrepreneurs, business owners, startup founders, corporate leaders and accomplished professionals who are committed to business growth, continuous learning and meaningful professional relationships.</p>
         </div>
       </section>
 
       <section className="section">
         <div className="container">
+          <div className="why-intro">
+            <p>We bring together individuals from diverse industries and business backgrounds who value trust, integrity, knowledge sharing and collaboration.</p>
+            <p>Our membership community is designed for individuals who believe that the right business relationships, shared experiences and collective thinking can create meaningful opportunities.</p>
+          </div>
           <div className="why-grid two">
             {CRITERIA.map(([icon, tone, title, text]) => (
               <article className="why-card" key={title}>

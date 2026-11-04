@@ -54,7 +54,7 @@ const SUB = {
       ['check-circle', 'green', 'Resolved', rows.filter((r) => r.status === 'closed').length, 'Successfully closed', 'closed'],
     ],
     search: 'Search by name, company or message…',
-    text: (r) => [r.ref, r.full_name, r.company, r.email, r.mobile, r.message, r.member_name],
+    text: (r) => [r.ref, r.full_name, r.company, r.email, r.mobile, r.message, r.member_name, r.assigned_name],
     category: { label: 'All Enquiry Types', get: (r) => r.enquiry_type },
     dateLabel: 'Received Date',
     columns: [
@@ -63,6 +63,7 @@ const SUB = {
       { key: 'company', label: 'Company', sort: (r) => r.company, render: (r) => r.company || '—' },
       { key: 'type', label: 'Enquiry Type', sort: (r) => r.enquiry_type, render: (r) => <>{r.enquiry_type}{r.member_name && <small className="sub">For {r.member_name}</small>}</> },
       { key: 'date', label: 'Received On', sort: (r) => r.created_at, render: (r) => <span className="nowrap">{day(r.created_at)}</span> },
+      { key: 'who', label: 'Assigned To', sort: (r) => r.assigned_name, render: (r) => r.assigned_name || <span className="sub">Unassigned</span> },
     ],
     detail: (r) => [['Reference', r.ref], ['Full name', r.full_name], ['Mobile', r.mobile], ['Email', r.email], ['Company', r.company], ['Enquiry type', r.enquiry_type],
       ['For member', r.member_name], ['Message', r.message], ['Submitted', fmt.stamp(r.created_at)]],
@@ -74,11 +75,11 @@ const SUB = {
     sub: 'Manage event participants, registrations and attendance.',
     single: 'Registration',
     noun: 'registrations',
-    open: ['confirmed'],
+    open: ['pending'],
     stats: (rows) => [
-      ['users', 'blue', 'Total Registrations', rows.filter((r) => r.status !== 'cancelled').length, 'All active registrations', ''],
-      ['check-circle', 'green', 'Confirmed', rows.filter((r) => r.status === 'confirmed').length, 'Confirmed participants', 'confirmed'],
-      ['user-check', 'orange', 'Attended', rows.filter((r) => r.status === 'attended').length, 'Participants marked present', 'attended'],
+      ['users', 'blue', 'Total Registrations', rows.filter((r) => !['cancelled', 'rejected'].includes(r.status)).length, 'All active registrations', ''],
+      ['clock', 'orange', 'Pending Approval', rows.filter((r) => r.status === 'pending').length, 'Waiting for an administrator', 'pending'],
+      ['check-circle', 'green', 'Confirmed Registrations', rows.filter((r) => ['confirmed', 'attended'].includes(r.status)).length, 'Confirmed and attended', 'confirmed'],
     ],
     search: 'Search participant name or company…',
     text: (r) => [r.ref, r.full_name, r.company, r.email, r.mobile, r.membership_id],
@@ -178,10 +179,11 @@ function List({ name, query, data, events }) {
     q: query.get('q') || '', status: query.get('status') || '', cat: '', days: '', event: query.get('event_id') || '',
   }));
 
-  const show = (r) => openModal(
+  const page = ['registrations', 'enquiries'].includes(name); // full-page details (Part2 designs)
+  const show = (r) => (page ? go(`${name}/${r.id}`) : openModal(
     <Detail key={r.id} name={name} def={def} row={r} statuses={data.statuses}
       onSaved={(changes) => setRows((list) => list.map((x) => (x.id === r.id ? { ...x, ...changes } : x)))} />,
-  );
+  ));
   // #applications?open=12 (from the dashboard) opens that row.
   useEffect(() => {
     const id = Number(query.get('open'));
@@ -202,7 +204,7 @@ function List({ name, query, data, events }) {
   const fields = [
     { name: 'q', type: 'search', placeholder: def.search },
     ...(events ? [{ name: 'event', all: 'All Events', options: events.items.map((e) => [String(e.id), `${e.title} – ${fmt.date(e.event_date)}`]) }] : []),
-    { name: 'status', all: 'All Status', options: [['open', name === 'registrations' ? 'Confirmed' : 'Needs action'], ...data.statuses.map((s) => [s, statusLabel(s)])].filter(([v], i, a) => a.findIndex(([w]) => w === v) === i) },
+    { name: 'status', all: 'All Status', options: [['open', name === 'registrations' ? 'Pending approval' : 'Needs action'], ...data.statuses.map((s) => [s, statusLabel(s)])].filter(([v], i, a) => a.findIndex(([w]) => w === v) === i) },
     ...(def.category ? [{ name: 'cat', all: def.category.label, options: cats.map((c) => [c, c]) }] : []),
     { name: 'days', all: def.dateLabel, icon: 'calendar', options: DATE_RANGES },
   ];
@@ -210,15 +212,22 @@ function List({ name, query, data, events }) {
   const columns = [
     ...def.columns,
     { key: 'status', label: 'Status', sort: (r) => r.status, render: (r) => <StatusPill status={r.status} /> },
-    { key: 'act', label: 'Action', className: 'act', render: (r) => <RowButton onClick={() => show(r)} /> },
+    { key: 'act', label: 'Action', className: 'act', render: (r) => <RowButton onClick={() => show(r)}>{page ? 'View Details' : 'View'}</RowButton> },
   ];
 
   return (
     <>
       <PageHead title={def.title} sub={def.sub}>
-        <button className="btn btn-primary" type="button" onClick={() => exportCsv(name, shown)} disabled={!shown.length}>
-          <Icon name="download" /> Export {def.noun[0].toUpperCase() + def.noun.slice(1)}
-        </button>
+        {name === 'registrations' && <>
+          <button className="btn btn-outline btn-sm" type="button" onClick={() => go('registrations?status=pending')}><Icon name="clock" /> Pending Approvals</button>
+          <a className="btn btn-outline btn-sm" href="#registrations/activity">Activity History</a>
+          <a className="btn btn-primary" href="#registrations/export"><Icon name="download" /> Export Registrations</a>
+        </>}
+        {name !== 'registrations' && (
+          <button className="btn btn-primary" type="button" onClick={() => exportCsv(name, shown)} disabled={!shown.length}>
+            <Icon name="download" /> Export {def.noun[0].toUpperCase() + def.noun.slice(1)}
+          </button>
+        )}
       </PageHead>
       <div className="a-stats">
         {def.stats(rows).map(([icon, tone, title, n, sub, status]) => (

@@ -3,7 +3,7 @@ import { Icon, Ic } from '../components/Icon.jsx';
 import { fmt } from '../lib/format.js';
 import { useApi, useParam, useTitle } from '../lib/hooks.js';
 
-const STATUS = { confirmed: 'Confirmed', cancelled: 'Cancelled', attended: 'Attended' };
+const STATUS = { pending: 'Pending Approval', confirmed: 'Confirmed', rejected: 'Not Confirmed', cancelled: 'Cancelled', attended: 'Attended' };
 
 const Row = ({ icon, k, children }) => (
   <div className="row"><Icon name={icon} /><span className="k">{k}</span><span className="v">{children}</span></div>
@@ -35,12 +35,14 @@ export default function RegistrationConfirmed() {
           <Row icon="calendar" k="Event Date">{d ? `${fmt.shortDay(d)}, ${fmt.date(d)}` : 'Date will be updated'}</Row>
           <Row icon="clock" k="Event Time">{fmt.timeRange(r.start_time, r.end_time)}</Row>
           <Row icon="pin" k="Venue">{r.venue_name || 'To Be Announced'}<br />{r.venue_address || 'Hyderabad'}</Row>
-          <Row icon="check-circle" k="Registration Status"><span className="badge caps green lg">{STATUS[r.status] || r.status}</span></Row>
+          <Row icon="check-circle" k="Registration Status"><span className={`badge caps ${r.status === 'pending' ? 'orange' : 'green'} lg`}>{STATUS[r.status] || r.status}</span></Row>
         </div>
       </>
     );
   }
 
+  // Events that need approval: the registration waits for the HEH team before it is confirmed.
+  const pending = r?.status === 'pending';
   const directions = r && venueKnown(r)
     ? r.map_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${r.venue_name}, ${r.venue_address}`)}`
     : null;
@@ -54,8 +56,12 @@ export default function RegistrationConfirmed() {
             <span>Event Registration</span><Icon name="chevron-right" /><span>Registration Confirmed</span>
           </nav>
           <div className="success-mark solid" style={{ marginTop: 26 }}><Icon name="check" /></div>
-          <h1>Registration Confirmed!</h1>
-          <p className="lead" style={{ maxWidth: 600 }}>Thank you for registering. We look forward to welcoming you to our upcoming HEH event.</p>
+          <h1>{pending ? 'Registration Received!' : 'Registration Confirmed!'}</h1>
+          <p className="lead" style={{ maxWidth: 600 }}>
+            {pending
+              ? 'Thank you for registering. The HEH team will review your registration and confirm it shortly.'
+              : 'Thank you for registering. We look forward to welcoming you to our upcoming HEH event.'}
+          </p>
         </div>
       </section>
 

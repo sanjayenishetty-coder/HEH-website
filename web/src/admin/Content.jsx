@@ -1,5 +1,6 @@
 // Events, members and success stories: list + editor.
 import { useEffect, useMemo, useState } from 'react';
+import { storyStatus } from './Stories.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { fmt } from '../lib/format.js';
 import { FormError, showErrors } from '../components/forms.jsx';
@@ -27,6 +28,10 @@ const CONTENT = {
       ['members_only', 'Members only (registration requires a valid HEH Membership ID)', 'check'],
       ['registration_open', 'Registration open', 'check'],
       ['published', 'Published on website', 'check'],
+      ['coordinator', 'Event coordinator', 'text'], ['city', 'City', 'text'],
+      ['capacity', 'Maximum participants (blank = no limit)', 'text'],
+      ['approval_mode', 'Registration approval', 'select', [['auto', 'Automatic (confirmed straight away)'], ['manual', 'Manual (an administrator approves each one)']]],
+      ['registration_opens', 'Registration opens (blank = when published)', 'date'], ['registration_closes', 'Registration closes (blank = event date)', 'date'],
       ['agenda', 'Agenda — one item per line: time | title | details', 'triples', ['time', 'title', 'details']],
       ['speaker', 'Speaker', 'group', [['name', 'Name'], ['designation', 'Designation'], ['company', 'Company'], ['bio', 'Introduction', 'textarea'], ['photo_url', 'Photo', 'image']]],
       ['summary', 'About this gathering (shown after the event)', 'textarea'],
@@ -88,7 +93,7 @@ const fromRows = (s, keys) => fromLines(s).map((line) => {
   return o;
 });
 
-async function uploadFile(file, showLogin) {
+export async function uploadFile(file, showLogin) {
   const body = new FormData();
   body.append('file', file);
   const res = await fetch('/api/admin/upload', { method: 'POST', body, credentials: 'same-origin' });
@@ -98,7 +103,7 @@ async function uploadFile(file, showLogin) {
   return data.url;
 }
 
-function ImageField({ id, n, text, value, error }) {
+export function ImageField({ id, n, text, value, error }) {
   const { toast, showLogin } = useAdmin();
   const [url, setUrl] = useState(value || '');
   async function onFile(e) {
@@ -360,22 +365,22 @@ const LISTS = {
     add: 'Add Success Story',
     table: 'Success Stories',
     noun: 'stories',
-    status: (s) => (s.published ? 'published' : 'draft'),
+    status: storyStatus,
     stats: (items) => [
       ['star', 'blue', 'Total Stories', items.length, 'All success stories', ''],
       ['check-circle', 'green', 'Published Stories', items.filter((s) => s.published).length, 'Visible on the website', 'published'],
-      ['file-edit', 'orange', 'Draft Stories', items.filter((s) => !s.published).length, 'Not yet published', 'draft'],
+      ['file-edit', 'orange', 'Draft Stories', items.filter((s) => !s.published && !s.archived).length, 'Not yet published', 'draft'],
     ],
     search: 'Search story title or member…',
     text: (s) => [s.title, s.category, ...(s.members_involved || [])],
-    statuses: [['published', 'Published'], ['draft', 'Draft']],
+    statuses: [['published', 'Published'], ['draft', 'Draft'], ['archived', 'Archived']],
     category: { label: 'All Categories', get: (s) => s.category },
     action: 'Manage',
     columns: [
       { key: 'title', label: 'Story', sort: (s) => s.title, render: (s) => (
         <span className="a-item"><Thumb url={s.image_url} /><span><b>{s.title}</b>{s.featured && <small className="feat"><Icon name="star" /> Featured</small>}</span></span>
       ) },
-      { key: 'members', label: 'Members', sort: (s) => (s.members_involved || []).join(), render: (s) => (s.members_involved || []).join(', ') || '—' },
+      { key: 'members', label: 'Entrepreneur', sort: (s) => s.member_name || (s.members_involved || []).join(), render: (s) => s.member_name || (s.members_involved || []).join(', ') || '—' },
       { key: 'cat', label: 'Category', sort: (s) => s.category, render: (s) => s.category },
       { key: 'date', label: 'Published On', sort: (s) => s.published_on, render: (s) => <span className="nowrap">{fmt.date(s.published_on)}</span> },
     ],
@@ -395,8 +400,14 @@ function ContentList({ name, query, items }) {
   const [tab, setTab] = useState('');
   const [filter, setFilter] = useState(() => ({ q: query.get('q') || '', status: query.get('status') || '', cat: '', dates: '' }));
 
-  const edit = (item) => openModal(<Editor key={`${name}-${item.id || 'new'}-${Date.now()}`} name={name} item={item} onSaved={reload} />);
+  // Stories open as full pages; a new event uses the Create Event wizard (Part2 designs).
+  const edit = (item) => {
+    if (name === 'stories') { go(item.id ? `stories/${item.id}` : 'stories/new'); return; }
+    if (name === 'events' && !item.id) { go('events/new'); return; }
+    openModal(<Editor key={`${name}-${item.id || 'new'}-${Date.now()}`} name={name} item={item} onSaved={reload} />);
+  };
   const open = async (it) => {
+    if (name === 'stories') { go(`stories/${it.id}`); return; }
     try { edit(await call(`/${name}/${it.id}`)); } catch (err) { toast(err.message, true); }
   };
 

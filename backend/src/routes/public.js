@@ -30,6 +30,22 @@ const STORY_CARD_COLS = `id, slug, title, category, summary, image_url, members_
   business_category, featured, published_on`;
 
 const isPast = (e) => e.event_date && e.event_date < todayIST();
+
+// Why registration is closed (admin switch, before/after the registration window, or full); '' when open.
+async function registrationClosed(e) {
+  const today = todayIST();
+  if (isPast(e) || !e.registration_open) return 'Registration for this event is closed.';
+  if (e.registration_opens && today < e.registration_opens) return `Registration for this event opens on ${e.registration_opens}.`;
+  if (e.registration_closes && today > e.registration_closes) return 'Registration for this event is closed.';
+  if (e.capacity) {
+    const { rows } = await query(
+      `SELECT count(*)::int AS n FROM event_registrations WHERE event_id = $1 AND status IN ('pending', 'confirmed', 'attended')`,
+      [e.id]
+    );
+    if (rows[0].n >= e.capacity) return 'This event is full. Registration is closed.';
+  }
+  return '';
+}
 function todayIST() {
   return new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
 }
@@ -96,16 +112,16 @@ router.get('/events/:slug', wrap(async (req, res) => {
   const e = rows[0];
   delete e.created_at;
   delete e.updated_at;
-  res.json({ ...e, is_past: isPast(e) });
+  const closed = await registrationClosed(e);
+  res.json({ ...e, registration_open: !closed, registration_note: closed, is_past: isPast(e) });
 }));
 
 router.post('/events/:slug/register', submitLimiter, wrap(async (req, res) => {
   const { rows } = await query('SELECT * FROM events WHERE slug = $1 AND published', [req.params.slug]);
   const event = rows[0];
   if (!event) return notFound(res, 'Event not found');
-  if (isPast(event) || !event.registration_open) {
-    return res.status(409).json({ error: 'Registration for this event is closed.' });
-  }
+  const closed = await registrationClosed(event);
+  if (closed) return res.status(409).json({ error: closed });
   const data = validate(req.body, {
     full_name: rules.text({ required: true, max: 120, label: 'Full name' }),
     mobile: rules.mobile(),
@@ -139,11 +155,12 @@ router.post('/events/:slug/register', submitLimiter, wrap(async (req, res) => {
     const ref = `HEH-${dateKey}-${pad(n)}`;
     const token = newToken();
     await client.query(
-      `INSERT INTO event_registrations (ref, token, event_id, full_name, mobile, company, membership_id, email)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [ref, token, event.id, data.full_name, data.mobile, data.company, data.membership_id.toUpperCase(), data.email]
+      `INSERT INTO event_registrations (ref, token, event_id, full_name, mobile, company, membership_id, email, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [ref, token, event.id, data.full_name, data.mobile, data.company, data.membership_id.toUpperCase(), data.email,
+        event.approval_mode === 'manual' ? 'pending' : 'confirmed']
     );
-    return { ref, token };
+    return { ref, token, pending: event.approval_mode === 'manual' };
   });
   if (result.duplicate) {
     return res.status(409).json({

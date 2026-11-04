@@ -179,6 +179,8 @@ const STATUS = {
   completed: ['Completed', 'green'],
   draft: ['Draft', 'grey'],
   published: ['Published', 'green'],
+  pending: ['Pending Approval', 'orange'],
+  archived: ['Archived', 'grey'],
 };
 export const statusLabel = (s) => STATUS[s]?.[0] || String(s || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 export const StatusPill = ({ status }) => <span className={`a-pill ${STATUS[status]?.[1] || 'grey'}`}>{statusLabel(status)}</span>;

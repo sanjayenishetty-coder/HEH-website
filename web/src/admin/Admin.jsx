@@ -1,5 +1,6 @@
 // HEH admin panel: submissions (applications, enquiries, registrations) and content (events, members, stories).
-// Pages live in the URL hash (#applications?status=received&q=rahul) so lists can be bookmarked and linked.
+// Pages live in the URL hash (#applications?status=received&q=rahul) so lists can be bookmarked and linked;
+// full-page screens add a path (#registrations/12/approve, #stories/new, #reports/events).
 // Layout from images/Admin Login/.../Part1: navy sidebar, top bar with search, notifications and the admin menu.
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import './admin.css';
@@ -9,6 +10,11 @@ import Login from './Login.jsx';
 import Dashboard from './Dashboard.jsx';
 import Submissions from './Submissions.jsx';
 import Content from './Content.jsx';
+import RegistrationPages from './Registrations.jsx';
+import EnquiryPages from './Enquiries.jsx';
+import StoryPages from './Stories.jsx';
+import EventPages from './EventWizard.jsx';
+import ReportPages from './Reports.jsx';
 
 const Ctx = createContext(null);
 export const useAdmin = () => useContext(Ctx);
@@ -22,11 +28,17 @@ const TABS = [
   ['registrations', 'Registrations', 'user-check', 'Event Registrations'],
   ['stories', 'Success Stories', 'star', 'Success Stories'],
   ['enquiries', 'Enquiries', 'chat', 'Enquiry Management'],
+  ['reports', 'Reports', 'chart', 'Reports & Analytics'],
 ];
 
+// Full-page screens under a menu item: #<tab>/<path...>
+const PAGES = { registrations: RegistrationPages, enquiries: EnquiryPages, stories: StoryPages, events: EventPages, reports: ReportPages };
+
 const readHash = () => {
-  const [tab, query = ''] = window.location.hash.slice(1).split('?');
-  return { tab: TABS.some(([k]) => k === tab) ? tab : 'dashboard', query: new URLSearchParams(query) };
+  const [where, query = ''] = window.location.hash.slice(1).split('?');
+  const [tab, ...path] = where.split('/').map(decodeURIComponent);
+  const known = TABS.some(([k]) => k === tab);
+  return { tab: known ? tab : 'dashboard', path: known ? path.filter(Boolean) : [], query: new URLSearchParams(query) };
 };
 
 
@@ -99,7 +111,8 @@ export default function Admin() {
   }
 
   const ctx = { call, toast, openModal: setModal, closeModal, meta, go, reload, showLogin, user };
-  const { tab, query } = route;
+  const { tab, path, query } = route;
+  const Sub = path.length || tab === 'reports' ? PAGES[tab] : null;
   const viewKey = `${window.location.hash}|${reloadKey}`;
 
   return (
@@ -107,10 +120,11 @@ export default function Admin() {
       {auth === 'login' && <Login onSignedIn={showApp} expired={expired} />}
 
       {auth === 'app' && (
-        <Shell tab={tab} query={query} user={user} onLogout={logout} call={call} reloadKey={reloadKey}>
-          {tab === 'dashboard' && <Dashboard key={viewKey} />}
-          {['applications', 'enquiries', 'registrations'].includes(tab) && <Submissions key={viewKey} name={tab} query={query} />}
-          {['events', 'members', 'stories'].includes(tab) && <Content key={viewKey} name={tab} query={query} />}
+        <Shell tab={tab} path={path.join('/')} query={query} user={user} onLogout={logout} call={call} reloadKey={reloadKey}>
+          {Sub && <Sub key={viewKey} path={path} query={query} />}
+          {!Sub && tab === 'dashboard' && <Dashboard key={viewKey} />}
+          {!Sub && ['applications', 'enquiries', 'registrations'].includes(tab) && <Submissions key={viewKey} name={tab} query={query} />}
+          {!Sub && ['events', 'members', 'stories'].includes(tab) && <Content key={viewKey} name={tab} query={query} />}
         </Shell>
       )}
 
@@ -139,7 +153,7 @@ function useDropdown() {
   return [open, setOpen, ref];
 }
 
-function Shell({ tab, query, user, onLogout, call, reloadKey, children }) {
+function Shell({ tab, path, query, user, onLogout, call, reloadKey, children }) {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('heh-admin-collapsed') === '1');
   const [drawer, setDrawer] = useState(false); // phone/tablet menu
   const [counts, setCounts] = useState(null);
@@ -150,6 +164,8 @@ function Shell({ tab, query, user, onLogout, call, reloadKey, children }) {
   // New items for the bell, refreshed on every page change.
   useEffect(() => { call('/summary').then(setCounts, () => {}); }, [call, tab, reloadKey]);
   useEffect(() => { setDrawer(false); }, [tab]);
+  // Each new screen starts at the top.
+  useEffect(() => { window.scrollTo(0, 0); }, [tab, path]);
 
   function toggleMenu() {
     if (window.matchMedia('(max-width: 960px)').matches) { setDrawer((d) => !d); return; }
@@ -160,8 +176,8 @@ function Shell({ tab, query, user, onLogout, call, reloadKey, children }) {
   function search(e) {
     e.preventDefault();
     const q = e.currentTarget.q.value.trim();
-    const target = tab === 'dashboard' ? 'members' : tab;
-    const p = new URLSearchParams(tab === target ? query : '');
+    const target = ['dashboard', 'reports'].includes(tab) ? 'members' : tab;
+    const p = new URLSearchParams(tab === target && !path ? query : '');
     if (q) p.set('q', q); else p.delete('q');
     window.location.hash = `${target}${p.toString() ? `?${p}` : ''}`;
   }
@@ -169,6 +185,7 @@ function Shell({ tab, query, user, onLogout, call, reloadKey, children }) {
   const notes = counts ? [
     [counts.new_applications, ['new membership application', 'new membership applications'], 'applications?status=received', 'file'],
     [counts.new_enquiries, ['new enquiry', 'new enquiries'], 'enquiries?status=received', 'chat'],
+    [counts.pending_registrations, ['registration waiting for approval', 'registrations waiting for approval'], 'registrations?status=pending', 'user-check'],
     [counts.recent_registrations, ['event registration in the last 7 days', 'event registrations in the last 7 days'], 'registrations', 'user-check'],
   ].filter(([n]) => n > 0) : [];
 

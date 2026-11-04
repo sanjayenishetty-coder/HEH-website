@@ -226,6 +226,7 @@ section[id] { scroll-margin-top: 90px; }
 }
 .dot-list.one { grid-template-columns: 1fr; gap: 8px; }
 .dot-list.one li { padding-left: 22px; }
+.section-lead { margin-top: 18px; max-width: 760px; font-size: 17px; color: var(--muted); }
 .note { margin-top: 18px; color: var(--muted); font-size: 14px; }
 
 /* tinted icon circles */

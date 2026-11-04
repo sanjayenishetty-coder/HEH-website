@@ -6,15 +6,12 @@ import { useTitle } from '../lib/hooks.js';
 const HIGHLIGHTS = ['Verified business owners only', 'Two working sessions every month', 'Decision within 5–7 business days'];
 
 const INCLUDED = [
-  'All core networking events (20+ per year)',
-  'Monthly expert masterclasses with industry leaders',
-  'Premium member directory with contact access',
-  'Business referral system and lead generation',
-  'Exclusive WhatsApp groups for instant networking',
-  'Annual business growth assessment report',
-  'Industry visits and market exposure',
-  'Member-only resources and templates',
-  'Discounted rates on additional HEH services',
+  "Access to the HEH official members' community",
+  'Participation in regular business networking meetings',
+  'Knowledge-sharing sessions and expert interactions',
+  'Networking opportunities with entrepreneurs and business leaders',
+  'Access to official member communication groups',
+  'Special member pricing on all HEH events, monthly programmes, workshops and annual business summits',
 ];
 
 export default function MembershipPlan() {
@@ -43,6 +40,7 @@ export default function MembershipPlan() {
             <div className="plan-included">
               <h2>What’s included</h2>
               <ul>{INCLUDED.map((t) => <li key={t}><span className="tick"><Icon name="check" /></span>{t}</li>)}</ul>
+              <p className="note">Additional participation fees may apply to certain workshops and special programmes. Membership fees are payable only after application approval.</p>
             </div>
           </div>
 

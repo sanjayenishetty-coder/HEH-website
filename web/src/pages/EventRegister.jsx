@@ -86,7 +86,7 @@ export default function EventRegister() {
                 {errors.consent && <span className="err">{errors.consent}</span>}
               </label>
             </fieldset>
-            <FormError style={{ marginTop: 16 }} message={closed ? 'Registration for this event is closed.' : formError} />
+            <FormError style={{ marginTop: 16 }} message={closed ? e.registration_note || 'Registration for this event is closed.' : formError} />
             <div className="btn-row" style={{ marginTop: 26 }}>
               <button className="btn btn-primary" type="submit" style={{ minWidth: 270 }} disabled={busy || closed}>
                 Confirm Registration <Icon name="arrow-right" />
