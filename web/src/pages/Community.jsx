@@ -41,7 +41,6 @@ export default function Community() {
             <h1>Stronger Connections.<br />Greater Opportunities.</h1>
             <p className="lead" style={{ maxWidth: 560 }}>Discover a trusted network of entrepreneurs and business leaders who connect, collaborate and grow together through HEH.</p>
           </div>
-          <div className="hero-tagline"><span>Connect</span><span>Collaborate</span><span>Grow</span></div>
         </div>
       </section>
 
@@ -62,7 +61,7 @@ export default function Community() {
       <section className="section tight" style={{ borderBottom: '1px solid var(--line-cool)' }}>
         <div className="container">
           <div className="section-head">
-            <h2 className="title">Our Members</h2>
+            <h2 className="title">All Members</h2>
             <Link className="link-arrow navy" to="/members">View all members <Icon name="arrow-right" /></Link>
           </div>
           <div className="card-grid four"><Members /></div>

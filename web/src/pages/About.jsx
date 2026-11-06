@@ -12,13 +12,6 @@ export default function About() {
   useTitle('Hyderabad Entrepreneurs Hub | About');
   return (
     <>
-      <section className="page-hero">
-        <div className="container">
-          <span className="eyebrow tracked rule">About Hyderabad Entrepreneurs Hub</span>
-          <h1>About<br /><span className="accent">Hyderabad Entrepreneurs Hub</span></h1>
-        </div>
-      </section>
-
       <section className="section about-us">
         <div className="container">
           <h2 className="rule">About Us</h2>

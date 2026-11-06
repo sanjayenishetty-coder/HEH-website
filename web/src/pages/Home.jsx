@@ -41,7 +41,6 @@ export default function Home() {
     <>
       <section className="hero-home">
         <div className="photo" role="img" aria-label="Charminar, Hyderabad, at sunset">
-          <div className="hero-tagline"><span>Connect</span><span>Collaborate</span><span>Grow</span></div>
         </div>
         <div className="container">
           <div className="content">

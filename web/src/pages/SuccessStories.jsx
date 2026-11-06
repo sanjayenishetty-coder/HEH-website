@@ -93,7 +93,6 @@ export default function SuccessStories() {
             <h1>Real Connections.<br />Real Business Impact.</h1>
             <p className="lead" style={{ maxWidth: 600 }}>Discover how HEH entrepreneurs turn meaningful relationships into valuable collaborations, business opportunities and shared success.</p>
           </div>
-          <div className="hero-tagline"><span>Connect</span><span>Collaborate</span><span>Grow</span></div>
         </div>
       </section>
 

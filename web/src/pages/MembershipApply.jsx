@@ -166,7 +166,6 @@ export default function MembershipApply() {
             <h1>{title}</h1>
             <p className="lead" style={{ maxWidth: 880 }}>{lead}</p>
           </div>
-          <div className="hero-tagline"><span>Connect</span><span>Collaborate</span><span>Grow</span></div>
         </div>
       </section>
 

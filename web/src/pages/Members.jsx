@@ -70,7 +70,6 @@ export default function Members() {
             <h1>Meet Our Members</h1>
             <p className="lead" style={{ maxWidth: 600 }}>Entrepreneurs and business leaders from across industries who connect, collaborate and grow together through HEH.</p>
           </div>
-          <div className="hero-tagline"><span>Connect</span><span>Collaborate</span><span>Grow</span></div>
         </div>
       </section>
 
