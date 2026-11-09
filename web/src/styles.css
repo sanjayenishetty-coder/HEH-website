@@ -62,6 +62,7 @@ p { margin: 0; }
 .nav { display: flex; gap: clamp(18px, 2.4vw, 36px); font-size: 15px; }
 .nav a { position: relative; padding: 8px 0; color: var(--ink); white-space: nowrap; }
 .nav a:hover { color: var(--orange); }
+.nav .nav-login { display: none; font-weight: 600; color: var(--orange); }
 .nav a.active { font-weight: 600; color: var(--navy); }
 .nav a.active::after {
   content: ""; position: absolute; left: -4px; right: -4px; bottom: -12px;
@@ -824,6 +825,7 @@ a.team-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(13
 @media (max-width: 960px) {
   .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
   .header-cta { display: none; }
+  .nav .nav-login { display: block; }
   .feature-grid, .card-grid.four { grid-template-columns: repeat(2, 1fr); }
   .industry-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }

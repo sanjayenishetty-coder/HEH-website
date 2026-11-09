@@ -29,6 +29,10 @@ import NotFound from './pages/NotFound.jsx';
 
 // The admin panel is its own bundle, loaded only at /admin/.
 const Admin = lazy(() => import('./admin/Admin.jsx'));
+// The Member Portal is its own bundle too, loaded only at /portal/.
+const Portal = lazy(() => import('./portal/Portal.jsx'));
+// /login: one sign-in page for members and admins.
+const SignIn = lazy(() => import('./pages/SignIn.jsx'));
 
 // Old addresses (/about.html, /index.html) go to the clean ones, keeping ?e=... etc.
 function OldUrl() {
@@ -41,6 +45,8 @@ function App() {
   return (
     <Routes>
       <Route path="/admin/*" element={<Suspense fallback={null}><Admin /></Suspense>} />
+      <Route path="/portal/*" element={<Suspense fallback={null}><Portal /></Suspense>} />
+      <Route path="/login" element={<Suspense fallback={null}><SignIn /></Suspense>} />
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="about" element={<About />} />

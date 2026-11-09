@@ -1,6 +1,7 @@
 // Events, members and success stories: list + editor.
 import { useEffect, useMemo, useState } from 'react';
 import { storyStatus } from './Stories.jsx';
+import PortalAccess from './PortalAccess.jsx';
 import { Icon } from '../components/Icon.jsx';
 import { fmt } from '../lib/format.js';
 import { FormError, showErrors } from '../components/forms.jsx';
@@ -36,6 +37,7 @@ const CONTENT = {
       ['speaker', 'Speaker', 'group', [['name', 'Name'], ['designation', 'Designation'], ['company', 'Company'], ['bio', 'Introduction', 'textarea'], ['photo_url', 'Photo', 'image']]],
       ['summary', 'About this gathering (shown after the event)', 'textarea'],
       ['photos', 'Event photos (shown after the event)', 'photos'],
+      ['videos', 'Event videos for the Member Portal gallery — one per line: title | YouTube or video link', 'pairs', ['title', 'url']],
       ['featured', 'Featured entrepreneur (after the event)', 'group', [['name', 'Name'], ['designation', 'Designation'], ['company', 'Company'], ['topic', 'Talk / topic'], ['photo_url', 'Photo', 'image']]],
       ['takeaways', 'Key takeaways — one per line: title | text', 'pairs', ['title', 'text']],
     ],
@@ -271,6 +273,7 @@ function Editor({ name, item, onSaved }) {
       <h2>{item.id ? `Edit ${def.single}` : `New ${def.single}`}</h2>
       <div className="form-grid">
         {def.fields(meta).map((f) => <FieldInput key={f[0]} spec={f} value={item[f[0]]} errors={errors} />)}
+        {name === 'members' && item.id && <PortalAccess memberId={item.id} />}
       </div>
       <FormError message={formError} style={{ marginTop: 14 }} />
       <div className="actions">

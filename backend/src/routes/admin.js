@@ -229,6 +229,7 @@ const resources = {
       venue_name: asText, venue_address: asText, map_url: asUrl, image_url: asImage,
       members_only: asBool, registration_open: asBool,
       agenda: asJsonArray, speaker: asJsonObject, featured: asJsonObject, takeaways: asJsonArray, photos: asJsonArray,
+      videos: (v) => JSON.stringify((Array.isArray(v) ? v : []).map((x) => ({ title: asText(x && x.title), url: asUrl(x && x.url) })).filter((x) => x.url)),
       published: asBool,
       coordinator: asText, city: asText, capacity: asCapacity,
       registration_opens: asDate, registration_closes: asDate,
@@ -457,6 +458,7 @@ router.get('/meta', (req, res) => {
 
 // Part2 workflows (approve / assign / publish / archive, reports).
 router.use(require('./workflows'));
+router.use(require('./portal-admin'));
 
 // Remove an uploaded file that is no longer referenced (best effort; only inside uploadDir).
 router.delete('/upload', wrap(async (req, res) => {

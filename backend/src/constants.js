@@ -85,7 +85,30 @@ const reportTypes = [
   ['enquiries', 'Enquiries'],
 ];
 
+// Member Portal choices (designs: images/Member Login Web Application/Part 1).
+const expertiseAreas = [
+  'Software Development', 'Product Development', 'Digital Transformation', 'Business Consulting', 'Digital Marketing',
+  'Marketing', 'Sales & Distribution', 'Manufacturing', 'Financial Advisory', 'Legal & Compliance', 'Industrial Automation',
+  'Real Estate', 'Healthcare Services', 'Education & Training', 'Human Resources', 'Operations & Scale', 'Design & Branding',
+];
+const collaborationPreferences = [
+  'Strategic Partnerships', 'Business Referrals', 'Joint Ventures', 'Mentorship', 'Investment Opportunities', 'Knowledge Sharing',
+];
+const businessInterests = [
+  'Technology', 'Startups', 'Real Estate', 'Healthcare', 'Manufacturing', 'Education', 'Retail', 'Finance', 'Hospitality', 'Sustainability',
+];
+const businessTypes = ['Proprietorship', 'Partnership', 'LLP', 'Private Limited', 'Public Limited', 'Startup', 'Other'];
+// Verification documents: [category, [document types]]
+const documentTypes = [
+  ['Identity', ['Government ID (Aadhaar / PAN)', 'Passport', 'Driving Licence']],
+  ['Company', ['Company Registration Certificate', 'GST Certificate', 'Udyam / MSME Certificate', 'Trade Licence']],
+  ['Membership', ['HEH Membership Form', 'Payment Receipt', 'Other']],
+];
+const connectionPurposes = ['Collaboration', 'Business Referrals', 'Mentorship', 'Networking'];
+const memberCancelReasons = ['Schedule Conflict', 'Unable to attend', 'Registered by mistake', 'Event details changed', 'Other'];
+
 module.exports = {
+  expertiseAreas, collaborationPreferences, businessInterests, businessTypes, documentTypes, connectionPurposes, memberCancelReasons,
   industries, turnoverRanges, enquiryTypes, storyCategories, eventCategories, memberTypes, statuses,
   registrationRejectReasons, registrationCancelReasons, enquiryPriorities, enquiryChannels, enquiryOutcomes,
   enquiryCloseReasons, enquiryReopenReasons, storyArchiveReasons, reportTypes,

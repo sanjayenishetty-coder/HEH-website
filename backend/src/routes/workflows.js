@@ -82,6 +82,10 @@ async function changeRegistration(req, res, { from, to, action, reasonRequired, 
      WHERE id = $1`,
     [r.id, to, reason, remarks],
   );
+  // Members who registered from the portal also see it there.
+  if (r.member_id) {
+    await require('./member').notify(r.member_id, 'event', `Registration ${action}`, `${eventLine(r)}${reason ? ` – ${reason}` : ''}`, `events/registrations/${r.ref}`);
+  }
   const send = b.notify === undefined ? true : asBool(b.notify);
   const message = text(b.message, 3000) || defaultMessage(r, reason);
   const mailed = send && (await notify(r.email, `${action}: ${r.event_title}`, `Registration ${action.toLowerCase()}`, message));
@@ -113,7 +117,7 @@ router.post('/registrations/:id(\\d+)/attended', wrap(async (req, res) => {
   const r = await getRegistration(req.params.id);
   if (!r) return notFound(res);
   if (r.status !== 'confirmed') return bad(res, 'Only confirmed registrations can be marked as attended.');
-  await query(`UPDATE event_registrations SET status = 'attended', updated_at = now() WHERE id = $1`, [r.id]);
+  await query(`UPDATE event_registrations SET status = 'attended', checked_in_at = coalesce(checked_in_at, now()), updated_at = now() WHERE id = $1`, [r.id]);
   await activity.log(req, 'registrations', 'Marked as Attended', { id: r.id, ref: r.ref, details: `${r.full_name} – ${r.event_title}` });
   res.json(await getRegistration(r.id));
 }));

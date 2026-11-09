@@ -24,12 +24,14 @@ web/                       The website + admin panel: React 18 + react-router, b
                            its "Members" item is OurMembers (/our-members, grouped by member type), separate
                            from the Community section's member directory (/members)
   src/admin/               Admin panel (/admin/): Login, Dashboard, Submissions, Content editors
+  src/portal/              Member Portal (/portal/): dashboard, profile, directory, connections, events, gallery
   scripts/route-pages.js   Post-build: copies dist/index.html to about.html, events.html, admin/index.html ...
 backend/                   Node/Express API (PostgreSQL) — deployed to /srv/heh/prod/backend
   migrations/              Versioned SQL migrations (NNNN_name.sql), applied by src/migrate.js
   src/seed.js              Sample events/stories from the designs (npm run db:seed; only fills empty tables)
   src/routes/public.js     /api/... used by the website
   src/routes/admin.js      /api/admin/... used by the admin panel
+  src/routes/member.js     /api/member/... used by the Member Portal (portal-admin.js: admin side of it)
 deploy/                    systemd unit and nginx location blocks used on the server
 ```
 
@@ -87,6 +89,14 @@ To change the admin password: `npm run hash-password -- 'new-password'`, put the
 will mangle if you pass it through a variable), then `systemctl restart heh-api`.
 Sign-in ignores surrounding spaces; 10 failed attempts lock it for 15 minutes.
 
+## Member Portal
+
+`/portal/` — for HEH members. In `/admin/`, open a member (Members > the member) and use **Member Portal access >
+Turn on portal access**; this creates a temporary password, shown once, to give the member. They sign in with
+their email or HEH Membership ID and are asked to choose their own password. From the same box you can reset the
+password, turn access off, and verify the documents the member uploads. Members can reset a forgotten password
+by email once `SMTP_*` is set up. Event videos for the portal gallery are added in the event editor.
+
 ## Deploy
 
 Server: Ubuntu VPS `169.58.149.137`, user `root`, SSH key `E:\Personal\vishnu\projects\servers\kvgc_key_pair.pem`.
@@ -97,6 +107,7 @@ Server: Ubuntu VPS `169.58.149.137`, user `root`, SSH key `E:\Personal\vishnu\pr
 | API | `/srv/heh/prod/backend`, systemd `heh-api.service`, listens on `127.0.0.1:1502` (runs as user `heh`) |
 | Database | PostgreSQL 16, database `heh_test`, role `heh` (password in backend `.env`) |
 | Uploads | `/srv/heh/prod/uploads` (served at `/uploads/`) |
+| Member documents | `/srv/heh/prod/uploads-documents` (private: not served by nginx; owned by `heh`) |
 | Logs | `/srv/heh/prod/logs/api*.log`, `/var/log/nginx/heh-*.log` |
 | nginx (port 1501) | `/etc/nginx/sites-available/heh-prod` |
 | nginx (domain + HTTPS) | `/etc/nginx/sites-available/heh-domain` (certbot SSL) |
@@ -112,13 +123,18 @@ old one in `backups/`).
 
 Backend change: copy `backend/src`, `backend/migrations` (and `package*.json` if dependencies changed) to
 `/srv/heh/prod/backend`, run `npm ci --omit=dev` there if needed, then `sudo -u heh node src/migrate.js`
-and `systemctl restart heh-api`.
+and `systemctl restart heh-api`. Migrations are applied through `0018_member_portal.sql` (Member Portal).
+The private folder for member documents must exist and belong to `heh`
+(`mkdir -p /srv/heh/prod/uploads-documents && chown heh:heh /srv/heh/prod/uploads-documents && chmod 750 ...`;
+created on 9 Nov 2026). Never put it under `uploads/`, which nginx serves publicly.
 
 Check it:
 
 ```bash
 curl -I https://heh.visuprojects.in/
-curl https://heh.visuprojects.in/api/health
+curl -I https://heh.visuprojects.in/portal/
+curl https://heh.visuprojects.in/api/health          # {"ok":true}
+curl -I https://heh.visuprojects.in/api/member/me     # 401 when signed out
 ```
 
 On Windows git-bash, use `tar --force-local` when packing files from a `C:` path.
@@ -126,6 +142,8 @@ On Windows git-bash, use `tar --force-local` when packing files from a `C:` path
 ## Before launch
 
 - Replace the sample events and success stories (seeded from the designs) in `/admin/`; add member photos and profiles.
+- Member Portal: turn on portal access for each member in `/admin/` (Members > member > Member Portal access) and
+  share the temporary password; set up `SMTP_*` so members can reset forgotten passwords and get email notices.
 - Contact details (email, phone/WhatsApp, address, LinkedIn, Facebook) come from entrepreneurhub.in: `web/src/pages/Contact.jsx` and the footer in `web/src/components/Layout.jsx`.
 
 > The server hosts other projects (kvgc, yoga, stock360, zoofilings, batterydukaan, whatsapp, ...).

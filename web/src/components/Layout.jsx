@@ -85,8 +85,10 @@ function Header() {
               {label}
             </NavLink>
           ))}
+          {/* the header Login button is hidden at tablet/phone width, so the menu has it instead */}
+          <Link className="nav-login" to="/login" onClick={close}>Login</Link>
         </nav>
-        <Link className="btn btn-primary btn-sm header-cta" to="/membership-apply">Become a Member <Icon name="arrow-right" /></Link>
+        <Link className="btn btn-primary btn-sm header-cta" to="/login">Login <Icon name="arrow-right" /></Link>
       </div>
     </header>
   );

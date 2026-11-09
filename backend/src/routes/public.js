@@ -29,26 +29,7 @@ const MEMBER_PROFILE_COLS = `${MEMBER_CARD_COLS}, company_image_url, company_tag
 const STORY_CARD_COLS = `id, slug, title, category, summary, image_url, members_involved, companies,
   business_category, featured, published_on`;
 
-const isPast = (e) => e.event_date && e.event_date < todayIST();
-
-// Why registration is closed (admin switch, before/after the registration window, or full); '' when open.
-async function registrationClosed(e) {
-  const today = todayIST();
-  if (isPast(e) || !e.registration_open) return 'Registration for this event is closed.';
-  if (e.registration_opens && today < e.registration_opens) return `Registration for this event opens on ${e.registration_opens}.`;
-  if (e.registration_closes && today > e.registration_closes) return 'Registration for this event is closed.';
-  if (e.capacity) {
-    const { rows } = await query(
-      `SELECT count(*)::int AS n FROM event_registrations WHERE event_id = $1 AND status IN ('pending', 'confirmed', 'attended')`,
-      [e.id]
-    );
-    if (rows[0].n >= e.capacity) return 'This event is full. Registration is closed.';
-  }
-  return '';
-}
-function todayIST() {
-  return new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
-}
+const { isPast, registrationClosed, todayIST } = require('../eventrules');
 
 router.get('/health', wrap(async (req, res) => {
   await query('SELECT 1');

@@ -45,6 +45,8 @@ module.exports = {
   googleClientId: (process.env.GOOGLE_CLIENT_ID || '').trim(),
   sessionSecret: process.env.SESSION_SECRET,
   uploadDir: path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads')),
+  // Member Portal verification documents: private, outside the public /uploads folder (default: <uploads>-documents)
+  docDir: path.resolve(process.env.DOC_DIR || `${path.resolve(process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads'))}-documents`),
   serveStatic: process.env.SERVE_STATIC === '1',
   staticDir: path.resolve(__dirname, '..', '..', 'web', 'dist'), // React build (cd web && npm run build)
 };

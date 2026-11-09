@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import './login.css';
 import { api } from '../lib/api.js';
 import { Icon } from '../components/Icon.jsx';
 import { formData } from '../components/forms.jsx';
@@ -11,19 +12,39 @@ import { formData } from '../components/forms.jsx';
 const resetToken = () => new URLSearchParams(window.location.search).get('reset') || '';
 const dropResetFromUrl = () => window.history.replaceState(null, '', window.location.pathname + window.location.hash);
 
-export default function Login({ onSignedIn, expired = false }) {
+// One sign-in page for everyone: a Member / Admin switch picks the API (/api/member or /api/admin).
+// Used at /login (the website's Login button), /portal/ and /admin/; after signing in as the other role the
+// browser goes to that app (/portal/ or /admin/).
+const ADMIN = {
+  base: '/admin', heading: <>Welcome to<br />HEH Portal</>, tagline: 'A unified portal for our community, events and collaboration.',
+  signIn: 'Sign in to access the HEH Portal.', idPlaceholder: 'Username or Email Address', idLabel: 'Username or email address',
+  missing: 'Enter your username or email and your password.', wrong: 'Incorrect username or password. Please try again.',
+};
+const MEMBER = {
+  base: '/member', heading: <>Welcome to<br />HEH Member Portal</>, tagline: 'Connect with members, join events and grow your business network.',
+  signIn: 'Sign in to the HEH Member Portal.', idPlaceholder: 'Email Address or Membership ID', idLabel: 'Email address or HEH Membership ID',
+  missing: 'Enter your email or Membership ID and your password.', wrong: '',
+};
+let cfg = ADMIN;
+const APP = { admin: '/admin/', member: '/portal/' };
+
+// home: the app showing this page ('admin' | 'member'), or null on /login.
+export default function Login({ onSignedIn, expired = false, home = 'admin' }) {
+  const [role, setRole] = useState(() => (new URLSearchParams(window.location.search).get('as') === 'admin' || home === 'admin' ? 'admin' : 'member'));
+  cfg = role === 'admin' ? ADMIN : MEMBER;
+  const done = () => (role === home ? onSignedIn() : window.location.assign(APP[role]));
   const [view, setView] = useState(() => (resetToken() ? 'reset' : expired ? 'expired' : 'signin'));
   const [options, setOptions] = useState({ google: null, mail: false });
   const [code, setCode] = useState(null); // { step: 'login' | 'verify', token, email }
   const [sentTo, setSentTo] = useState(''); // masked address the reset link went to
   const [lastEmail, setLastEmail] = useState('');
 
-  useEffect(() => { api('/admin/auth-options').then(setOptions, () => {}); }, []);
+  useEffect(() => { api(`${cfg.base}/auth-options`).then(setOptions, () => {}); }, [role]);
 
   const toSignIn = () => { dropResetFromUrl(); setView('signin'); };
   let card;
   if (view === 'expired') card = <Expired onContinue={toSignIn} />;
-  else if (view === 'code') card = <CodeStep {...code} onSignedIn={onSignedIn} onBack={toSignIn} />;
+  else if (view === 'code') card = <CodeStep {...code} onSignedIn={done} onBack={toSignIn} />;
   else if (view === 'forgot') {
     card = <Forgot onBack={toSignIn} initial={lastEmail} onSent={(email, masked) => { setLastEmail(email); setSentTo(masked); setView('sent'); }} />;
   } else if (view === 'sent') card = <Sent email={sentTo} resendTo={lastEmail} onBack={toSignIn} />;
@@ -33,7 +54,9 @@ export default function Login({ onSignedIn, expired = false }) {
     card = (
       <SignIn
         options={options}
-        onSignedIn={onSignedIn}
+        role={role}
+        onRole={setRole}
+        onSignedIn={done}
         onCode={(c) => { setCode(c); setView('code'); }}
         onForgot={() => setView('forgot')}
       />
@@ -43,9 +66,11 @@ export default function Login({ onSignedIn, expired = false }) {
   return (
     <section className="login">
       <div className="login-art">
-        <img className="login-logo" src="/assets/brand/logo-light.png" alt="Hyderabad Entrepreneurs Hub" width="448" height="136" />
-        <h1>Welcome to<br />HEH Portal</h1>
-        <p>A unified portal for our community, events and collaboration.</p>
+        <a className="login-home" href="/" title="Go to the HEH website">
+          <img className="login-logo" src="/assets/brand/logo-light.png" alt="Hyderabad Entrepreneurs Hub – home" width="448" height="136" />
+        </a>
+        <h1>{cfg.heading}</h1>
+        <p>{cfg.tagline}</p>
       </div>
       <div className="login-side">{card}</div>
     </section>
@@ -97,7 +122,7 @@ function useBusy() {
 
 // ---------- Sign in ----------
 
-function SignIn({ options, onSignedIn, onCode, onForgot }) {
+function SignIn({ options, role, onRole, onSignedIn, onCode, onForgot }) {
   const [error, setError] = useState('');
   const [busy, run] = useBusy();
   const username = useRef();
@@ -107,16 +132,16 @@ function SignIn({ options, onSignedIn, onCode, onForgot }) {
     e.preventDefault();
     const form = e.currentTarget;
     const body = formData(form);
-    if (!body.username || !body.password) { setError('Enter your username or email and your password.'); return; }
+    if (!body.username || !body.password) { setError(cfg.missing); return; }
     setError('');
     run(async () => {
       try {
-        const res = await api('/admin/login', { method: 'POST', body });
+        const res = await api(`${cfg.base}/login`, { method: 'POST', body });
         form.password.value = '';
         if (res.step) onCode(res);
         else onSignedIn();
       } catch (err) {
-        setError(err.status === 401 ? 'Incorrect username or password. Please try again.' : err.message);
+        setError(err.status === 401 ? cfg.wrong || err.message : err.message);
         form.password.select();
       }
     });
@@ -124,10 +149,16 @@ function SignIn({ options, onSignedIn, onCode, onForgot }) {
 
   return (
     <form className="login-card" noValidate onSubmit={submit}>
-      <Head icon="users" title="Welcome Back">Sign in to access the HEH Portal.</Head>
+      <Head icon="users" title="Welcome Back">{cfg.signIn}</Head>
+      <div className="login-role" role="tablist" aria-label="Sign in as">
+        {[['member', 'Member', 'users'], ['admin', 'Admin', 'shield']].map(([k, label, icon]) => (
+          <button key={k} type="button" role="tab" aria-selected={role === k} className={role === k ? 'on' : ''}
+            onClick={() => { onRole(k); setError(''); username.current?.focus(); }}><Icon name={icon} /> {label}</button>
+        ))}
+      </div>
       <label className="login-input">
         <Icon name="mail" />
-        <input ref={username} name="username" placeholder="Username or Email Address" aria-label="Username or email address" autoComplete="username" maxLength={160} />
+        <input ref={username} name="username" placeholder={cfg.idPlaceholder} aria-label={cfg.idLabel} autoComplete="username" maxLength={160} />
       </label>
       <PasswordInput name="password" placeholder="Password" autoComplete="current-password" invalid={Boolean(error)} />
       <div className="login-row">
@@ -171,7 +202,7 @@ function GoogleButton({ clientId, onSignedIn, onError }) {
           if (!resp.access_token) { onError('Google sign-in was cancelled.'); return; }
           setBusy(true);
           try {
-            await api('/admin/login/google', { method: 'POST', body: { access_token: resp.access_token } });
+            await api(`${cfg.base}/login/google`, { method: 'POST', body: { access_token: resp.access_token } });
             onSignedIn();
           } catch (err) {
             onError(err.message);
@@ -261,7 +292,7 @@ function CodeStep({ step, token, email, onSignedIn, onBack }) {
     if (value.length !== 6) { setError('Enter the 6-digit code.'); return; }
     run(async () => {
       try {
-        await api('/admin/login/code', { method: 'POST', body: { token, code: value } });
+        await api(`${cfg.base}/login/code`, { method: 'POST', body: { token, code: value } });
         onSignedIn();
       } catch (err) {
         setError(err.message);
@@ -275,7 +306,7 @@ function CodeStep({ step, token, email, onSignedIn, onBack }) {
     setError('');
     setNote('');
     try {
-      await api('/admin/login/resend', { method: 'POST', body: { token } });
+      await api(`${cfg.base}/login/resend`, { method: 'POST', body: { token } });
       setNote('A new code has been sent.');
     } catch (err) {
       setError(err.message);
@@ -322,7 +353,7 @@ function Forgot({ initial, onSent, onBack }) {
     setError('');
     run(async () => {
       try {
-        const res = await api('/admin/password/forgot', { method: 'POST', body: { email } });
+        const res = await api(`${cfg.base}/password/forgot`, { method: 'POST', body: { email } });
         onSent(email, res.email);
       } catch (err) {
         setError(err.message);
@@ -353,7 +384,7 @@ function Sent({ email, resendTo, onBack }) {
     setNote('');
     setError('');
     try {
-      await api('/admin/password/forgot', { method: 'POST', body: { email: resendTo } });
+      await api(`${cfg.base}/password/forgot`, { method: 'POST', body: { email: resendTo } });
       setNote('We’ve sent the link again.');
     } catch (err) {
       setError(err.message);
@@ -385,7 +416,7 @@ function Reset({ token, onDone, onBack, onForgot }) {
   const first = useRef();
 
   useEffect(() => {
-    api('/admin/password/reset/check', { method: 'POST', body: { token } }).then(
+    api(`${cfg.base}/password/reset/check`, { method: 'POST', body: { token } }).then(
       () => setState('ok'),
       (err) => { setLinkError(err.message); setState('invalid'); },
     );
@@ -403,7 +434,7 @@ function Reset({ token, onDone, onBack, onForgot }) {
     if (Object.keys(errs).length) return;
     run(async () => {
       try {
-        await api('/admin/password/reset', { method: 'POST', body: { token, password, confirm } });
+        await api(`${cfg.base}/password/reset`, { method: 'POST', body: { token, password, confirm } });
         onDone();
       } catch (err) {
         if (err.errors) setErrors(err.errors);
