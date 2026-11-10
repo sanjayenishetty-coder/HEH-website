@@ -709,3 +709,17 @@ textarea.p-input { resize: vertical; line-height: 1.5; }
   .p-cal-ev.workshop { background: var(--purple); }
   .p-searchbar > select, .p-filters > select { flex: 1 1 140px; min-width: 0; }
 }
+
+/* Event submissions (Working Committee) and approvals (Executive Council): EventSubmit.jsx */
+.p-note.good { background: var(--green-soft); }
+.p-note.good > .i { color: var(--green); }
+.p-note.bad { background: #fdeceb; }
+.p-note.bad > .i { color: var(--red); }
+.p-ev-image { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.p-ev-image img, .p-ev-noimg { width: 180px; height: 110px; border-radius: 10px; object-fit: cover; border: 1px solid #e7ebf2; }
+.p-ev-noimg { display: grid; place-items: center; background: #f5f7fa; color: var(--muted); }
+.p-ev-noimg .i { width: 32px; height: 32px; }
+.p-ev-image > div { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.p-ev-image .p-hint { flex-basis: 100%; }
+.p-ev-cover { display: block; width: 100%; max-height: 300px; object-fit: cover; border-radius: 10px; margin-bottom: 14px; }
+.p-text.pre { white-space: pre-line; }

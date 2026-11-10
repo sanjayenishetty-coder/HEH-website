@@ -95,12 +95,6 @@
   .code-boxes input { width: 44px; height: 52px; font-size: 21px; }
 }
 
-/* Member / Admin switch on the sign-in form */
-.login-role { display: flex; gap: 6px; margin: -10px 0 18px; padding: 5px; border: 1px solid #d6dce6; border-radius: 999px; background: #fff; }
-.login-role button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border: 0; border-radius: 999px; background: none; font: 500 15px var(--sans); color: var(--navy); cursor: pointer; }
-.login-role button .i { width: 18px; height: 18px; }
-.login-role button.on { background: var(--orange); color: #fff; }
-.login-role button:not(.on):hover { color: var(--orange); }
 
 /* Desktop: keep the whole sign-in screen inside the window (no page scroll) on shorter laptop screens */
 @media (min-width: 861px) and (max-height: 820px) {
@@ -111,7 +105,6 @@
   .login-icon .i { width: 52px; height: 52px; }
   .login-card h2 { margin-top: 6px; font-size: clamp(28px, 2.8vw, 36px); }
   .login-card .sub { margin: 6px 0 20px; }
-  .login-role { margin: -4px 0 12px; }
   .login-input { height: 48px; margin-top: 10px; }
   .login-error { margin: 6px 0 10px; }
   .login-row { margin: 6px 0 12px; }

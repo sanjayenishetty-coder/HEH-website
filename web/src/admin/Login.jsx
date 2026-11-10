@@ -11,53 +11,55 @@ import { formData } from '../components/forms.jsx';
 
 const resetToken = () => new URLSearchParams(window.location.search).get('reset') || '';
 const dropResetFromUrl = () => window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+const dropExpiredFromUrl = () => {
+  const q = new URLSearchParams(window.location.search);
+  q.delete('expired');
+  window.history.replaceState(null, '', window.location.pathname + (q.size ? `?${q}` : '') + window.location.hash);
+};
 
-// One sign-in page for everyone: a Member / Admin switch picks the API (/api/member or /api/admin).
-// Used at /login (the website's Login button), /portal/ and /admin/; after signing in as the other role the
-// browser goes to that app (/portal/ or /admin/).
-const ADMIN = {
-  base: '/admin', heading: <>Welcome to<br />HEH Portal</>, tagline: 'A unified portal for our community, events and collaboration.',
-  signIn: 'Sign in to access the HEH Portal.', idPlaceholder: 'Username or Email Address', idLabel: 'Username or email address',
-  missing: 'Enter your username or email and your password.', wrong: 'Incorrect username or password. Please try again.',
-};
-const MEMBER = {
-  base: '/member', heading: <>Welcome to<br />HEH Member Portal</>, tagline: 'Connect with members, join events and grow your business network.',
-  signIn: 'Sign in to the HEH Member Portal.', idPlaceholder: 'Email Address or Membership ID', idLabel: 'Email address or HEH Membership ID',
-  missing: 'Enter your email or Membership ID and your password.', wrong: '',
-};
-let cfg = ADMIN;
+// One sign-in page for everyone: email + password, no Member / Admin choice. Used at /login (the website's
+// Login button), /portal/ and /admin/. Sign-in tries the member and admin accounts (/api/member, /api/admin;
+// the app showing the page first) and the browser goes to the app of the account that matched.
+// Everyone signs in with their email address (no usernames or Membership IDs).
+const BASE = { admin: '/admin', member: '/member' };
 const APP = { admin: '/admin/', member: '/portal/' };
+// API for the code / reset steps: the account that signed in, or the one a reset link belongs to.
+let cfg = { base: '/admin' };
+const param = (k) => new URLSearchParams(window.location.search).get(k) || '';
+// After signing in: back to the screen the app sent us from (?next=/portal/#events), else the app's start page.
+const appUrl = (who) => { const next = param('next'); return next.startsWith(APP[who]) ? next : APP[who]; };
 
-// home: the app showing this page ('admin' | 'member'), or null on /login.
-export default function Login({ onSignedIn, expired = false, home = 'admin' }) {
-  const [role, setRole] = useState(() => (new URLSearchParams(window.location.search).get('as') === 'admin' || home === 'admin' ? 'admin' : 'member'));
-  cfg = role === 'admin' ? ADMIN : MEMBER;
-  const done = () => (role === home ? onSignedIn() : window.location.assign(APP[role]));
+// home: the app showing this page ('admin' | 'member'), or null on /login (the only place it is used now;
+// /admin/ and /portal/ send the browser to /login?for=admin|member, see toLogin.js).
+export default function Login({ onSignedIn, expired = param('expired') === '1', home = null }) {
+  const first = home || (param('for') === 'member' ? 'member' : 'admin'); // account type tried first
+  const [role, setRole] = useState(first); // whose account signed in
+  cfg = { base: BASE[role] };
+  const done = (who = role) => (who === home ? onSignedIn() : window.location.assign(appUrl(who)));
   const [view, setView] = useState(() => (resetToken() ? 'reset' : expired ? 'expired' : 'signin'));
   const [options, setOptions] = useState({ google: null, mail: false });
   const [code, setCode] = useState(null); // { step: 'login' | 'verify', token, email }
   const [sentTo, setSentTo] = useState(''); // masked address the reset link went to
   const [lastEmail, setLastEmail] = useState('');
 
-  useEffect(() => { api(`${cfg.base}/auth-options`).then(setOptions, () => {}); }, [role]);
+  useEffect(() => { api('/admin/auth-options').then(setOptions, () => {}); }, []);
 
-  const toSignIn = () => { dropResetFromUrl(); setView('signin'); };
+  const toSignIn = () => { dropResetFromUrl(); dropExpiredFromUrl(); setView('signin'); };
   let card;
   if (view === 'expired') card = <Expired onContinue={toSignIn} />;
-  else if (view === 'code') card = <CodeStep {...code} onSignedIn={done} onBack={toSignIn} />;
+  else if (view === 'code') card = <CodeStep {...code} onSignedIn={() => done('admin')} onBack={toSignIn} />;
   else if (view === 'forgot') {
-    card = <Forgot onBack={toSignIn} initial={lastEmail} onSent={(email, masked) => { setLastEmail(email); setSentTo(masked); setView('sent'); }} />;
-  } else if (view === 'sent') card = <Sent email={sentTo} resendTo={lastEmail} onBack={toSignIn} />;
+    card = <Forgot home={first} onBack={toSignIn} initial={lastEmail} onSent={(email, masked) => { setLastEmail(email); setSentTo(masked); setView('sent'); }} />;
+  } else if (view === 'sent') card = <Sent home={first} email={sentTo} resendTo={lastEmail} onBack={toSignIn} />;
   else if (view === 'reset') card = <Reset token={resetToken()} onBack={toSignIn} onForgot={() => { dropResetFromUrl(); setView('forgot'); }} onDone={() => { dropResetFromUrl(); setView('done'); }} />;
   else if (view === 'done') card = <Done onContinue={toSignIn} />;
   else {
     card = (
       <SignIn
         options={options}
-        role={role}
-        onRole={setRole}
-        onSignedIn={done}
-        onCode={(c) => { setCode(c); setView('code'); }}
+        home={first}
+        onSignedIn={(who) => { setRole(who); done(who); }}
+        onCode={(c) => { setRole('admin'); setCode(c); setView('code'); }}
         onForgot={() => setView('forgot')}
       />
     );
@@ -69,8 +71,8 @@ export default function Login({ onSignedIn, expired = false, home = 'admin' }) {
         <a className="login-home" href="/" title="Go to the HEH website">
           <img className="login-logo" src="/assets/brand/logo-light.png" alt="Hyderabad Entrepreneurs Hub – home" width="448" height="136" />
         </a>
-        <h1>{cfg.heading}</h1>
-        <p>{cfg.tagline}</p>
+        <h1>Welcome to<br />HEH Portal</h1>
+        <p>A unified portal for our community, events and collaboration.</p>
       </div>
       <div className="login-side">{card}</div>
     </section>
@@ -122,7 +124,10 @@ function useBusy() {
 
 // ---------- Sign in ----------
 
-function SignIn({ options, role, onRole, onSignedIn, onCode, onForgot }) {
+// Account types to try, the app showing the page first.
+const order = (home) => (home === 'member' ? ['member', 'admin'] : ['admin', 'member']);
+
+function SignIn({ options, home, onSignedIn, onCode, onForgot }) {
   const [error, setError] = useState('');
   const [busy, run] = useBusy();
   const username = useRef();
@@ -132,33 +137,33 @@ function SignIn({ options, role, onRole, onSignedIn, onCode, onForgot }) {
     e.preventDefault();
     const form = e.currentTarget;
     const body = formData(form);
-    if (!body.username || !body.password) { setError(cfg.missing); return; }
+    if (!body.username || !body.password) { setError('Enter your email address and your password.'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(body.username)) { setError('Enter a valid email address.'); return; }
     setError('');
     run(async () => {
-      try {
-        const res = await api(`${cfg.base}/login`, { method: 'POST', body });
-        form.password.value = '';
-        if (res.step) onCode(res);
-        else onSignedIn();
-      } catch (err) {
-        setError(err.status === 401 ? cfg.wrong || err.message : err.message);
-        form.password.select();
+      let problem = ''; // worth showing instead of "incorrect": access turned off, too many tries, server error
+      for (const who of order(home)) {
+        try {
+          const res = await api(`${BASE[who]}/login`, { method: 'POST', body });
+          form.password.value = '';
+          if (res.step) onCode(res);
+          else onSignedIn(who);
+          return;
+        } catch (err) {
+          if (!problem && (err.status !== 401 || /not active/i.test(err.message))) problem = err.message;
+        }
       }
+      setError(problem || 'Incorrect email or password. Please try again.');
+      form.password.select();
     });
   }
 
   return (
     <form className="login-card" noValidate onSubmit={submit}>
-      <Head icon="users" title="Welcome Back">{cfg.signIn}</Head>
-      <div className="login-role" role="tablist" aria-label="Sign in as">
-        {[['member', 'Member', 'users'], ['admin', 'Admin', 'shield']].map(([k, label, icon]) => (
-          <button key={k} type="button" role="tab" aria-selected={role === k} className={role === k ? 'on' : ''}
-            onClick={() => { onRole(k); setError(''); username.current?.focus(); }}><Icon name={icon} /> {label}</button>
-        ))}
-      </div>
+      <Head icon="users" title="Welcome Back">Sign in to access the HEH Portal.</Head>
       <label className="login-input">
         <Icon name="mail" />
-        <input ref={username} name="username" placeholder={cfg.idPlaceholder} aria-label={cfg.idLabel} autoComplete="username" maxLength={160} />
+        <input ref={username} name="username" type="email" placeholder="Email Address" aria-label="Email address" autoComplete="username" maxLength={160} />
       </label>
       <PasswordInput name="password" placeholder="Password" autoComplete="current-password" invalid={Boolean(error)} />
       <div className="login-row">
@@ -202,8 +207,8 @@ function GoogleButton({ clientId, onSignedIn, onError }) {
           if (!resp.access_token) { onError('Google sign-in was cancelled.'); return; }
           setBusy(true);
           try {
-            await api(`${cfg.base}/login/google`, { method: 'POST', body: { access_token: resp.access_token } });
-            onSignedIn();
+            await api('/admin/login/google', { method: 'POST', body: { access_token: resp.access_token } });
+            onSignedIn('admin');
           } catch (err) {
             onError(err.message);
           } finally {
@@ -340,7 +345,18 @@ function CodeStep({ step, token, email, onSignedIn, onBack }) {
 
 // ---------- Forgot password / Check your email ----------
 
-function Forgot({ initial, onSent, onBack }) {
+// The reset link is sent by every account type that has this email (member and/or admin).
+async function sendReset(home, email) {
+  let res = null;
+  let error = null;
+  for (const who of order(home)) {
+    try { res ||= await api(`${BASE[who]}/password/forgot`, { method: 'POST', body: { email } }); } catch (err) { error ||= err; }
+  }
+  if (!res) throw error;
+  return res;
+}
+
+function Forgot({ home, initial, onSent, onBack }) {
   const [error, setError] = useState('');
   const [busy, run] = useBusy();
   const input = useRef();
@@ -353,7 +369,7 @@ function Forgot({ initial, onSent, onBack }) {
     setError('');
     run(async () => {
       try {
-        const res = await api(`${cfg.base}/password/forgot`, { method: 'POST', body: { email } });
+        const res = await sendReset(home, email);
         onSent(email, res.email);
       } catch (err) {
         setError(err.message);
@@ -377,14 +393,14 @@ function Forgot({ initial, onSent, onBack }) {
   );
 }
 
-function Sent({ email, resendTo, onBack }) {
+function Sent({ home, email, resendTo, onBack }) {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   async function resend() {
     setNote('');
     setError('');
     try {
-      await api(`${cfg.base}/password/forgot`, { method: 'POST', body: { email: resendTo } });
+      await sendReset(home, resendTo);
       setNote('We’ve sent the link again.');
     } catch (err) {
       setError(err.message);

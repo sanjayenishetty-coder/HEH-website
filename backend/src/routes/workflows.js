@@ -4,6 +4,7 @@
 const express = require('express');
 const { query } = require('../db');
 const activity = require('../activity');
+const approval = require('../eventapproval');
 const mail = require('../mail');
 const C = require('../constants');
 
@@ -291,12 +292,26 @@ router.post('/stories/:id(\\d+)/restore', wrap(async (req, res) => {
 
 for (const [path, published, action] of [['publish', true, 'Event Published'], ['unpublish', false, 'Event Unpublished']]) {
   router.post(`/events/:id(\\d+)/${path}`, wrap(async (req, res) => {
+    // Publishing a Working Committee event that is waiting for approval approves it (src/eventapproval.js).
+    const approved = published && await approval.approve(Number(req.params.id), `${req.admin.username} (Admin)`);
+    if (approved) await activity.log(req, 'events', 'Event Approved', { id: approved.id, ref: approved.title });
     const { rows } = await query('UPDATE events SET published = $2, updated_at = now() WHERE id = $1 RETURNING *', [req.params.id, published]);
     if (!rows[0]) return notFound(res);
     await activity.log(req, 'events', action, { id: rows[0].id, ref: rows[0].title });
     res.json(rows[0]);
   }));
 }
+
+// Approve (and publish) or reject an event a Working Committee member added in the Member Portal.
+router.post('/events/:id(\\d+)/:what(approve|reject)', wrap(async (req, res) => {
+  const note = String((req.body || {}).note || '').trim();
+  if (req.params.what === 'reject' && !note) return res.status(400).json({ error: 'Enter the reason so the member can fix the event.' });
+  const by = `${req.admin.username} (Admin)`;
+  const e = req.params.what === 'approve' ? await approval.approve(Number(req.params.id), by, note) : await approval.reject(Number(req.params.id), by, note);
+  if (!e) return res.status(400).json({ error: 'This event is not waiting for approval.' });
+  await activity.log(req, 'events', req.params.what === 'approve' ? 'Event Approved' : 'Event Rejected', { id: e.id, ref: e.title, details: note });
+  res.json(e);
+}));
 
 // ---------- Reports ----------
 

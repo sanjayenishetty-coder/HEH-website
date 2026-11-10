@@ -2,6 +2,17 @@ import { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import './styles.css';
+
+// A tab opened before a deploy still asks for the old hashed files (e.g. the admin or portal bundle). If one is
+// gone, Vite fires vite:preloadError and the page would stay blank: reload once to pick up the new build.
+window.addEventListener('vite:preloadError', (e) => {
+  let last = 0;
+  try { last = Number(sessionStorage.getItem('heh-reloaded')) || 0; } catch { /* storage blocked */ }
+  if (Date.now() - last < 15000) return; // reloaded a moment ago: let the error show instead of looping
+  try { sessionStorage.setItem('heh-reloaded', String(Date.now())); } catch { /* storage blocked */ }
+  e.preventDefault();
+  window.location.reload();
+});
 import Layout from './components/Layout.jsx';
 import Home from './pages/Home.jsx';
 import About from './pages/About.jsx';

@@ -5,7 +5,7 @@ import { createContext, lazy, Suspense, useCallback, useContext, useEffect, useR
 import './portal.css';
 import { api } from '../lib/api.js';
 import { Icon } from '../components/Icon.jsx';
-import Login from '../admin/Login.jsx';
+import { toLogin } from '../admin/toLogin.js';
 
 const Dashboard = lazy(() => import('./Dashboard.jsx'));
 const Profile = lazy(() => import('./Profile.jsx'));
@@ -45,8 +45,7 @@ const readHash = () => {
 
 
 export default function Portal() {
-  const [auth, setAuth] = useState('checking'); // checking | login | app
-  const [expired, setExpired] = useState(false);
+  const [auth, setAuth] = useState('checking'); // checking | login (on the way to /login) | app
   const [me, setMe] = useState(null);
   const [meta, setMeta] = useState(null);
   const [route, setRoute] = useState(readHash);
@@ -79,7 +78,12 @@ export default function Portal() {
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastMsg(null), 3200);
   }, []);
-  const showLogin = useCallback((wasExpired = false) => { setModal(null); setExpired(wasExpired); setAuth('login'); }, []);
+  // Sign-in is on /login (wasExpired: the session ended while working; signedOut: after "Sign out").
+  const showLogin = useCallback((wasExpired = false, signedOut = false) => {
+    setModal(null);
+    setAuth('login');
+    toLogin('member', { expired: wasExpired, back: !signedOut });
+  }, []);
   const call = useCallback(async (path, opts) => {
     try {
       return await api(`/member${path}`, opts);
@@ -103,7 +107,7 @@ export default function Portal() {
   async function logout() {
     await api('/member/logout', { method: 'POST' }).catch(() => {});
     setMe(null);
-    showLogin();
+    showLogin(false, true);
   }
 
   const go = useCallback((hash) => { window.location.hash = hash; }, []);
@@ -112,7 +116,6 @@ export default function Portal() {
 
   return (
     <Ctx.Provider value={ctx}>
-      {auth === 'login' && <Login onSignedIn={showApp} expired={expired} home="member" />}
       {auth === 'app' && me && (
         <Shell route={route} me={me} onLogout={logout}>
           {me.temporary_password && route.tab !== 'settings' && (

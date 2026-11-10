@@ -1,5 +1,5 @@
 // Member Portal API, mounted at /api/member (designs: images/Member Login Web Application/Part 1).
-// Screens: web/src/portal/. A member signs in with their email or HEH Membership ID once an administrator has
+// Screens: web/src/portal/. A member signs in (at /login) with their email address once an administrator has
 // turned on portal access (routes/admin.js: /members/:id/portal).
 const crypto = require('crypto');
 const fs = require('fs');
@@ -14,6 +14,7 @@ const mail = require('../mail');
 const config = require('../config');
 const C = require('../constants');
 const { isPast, registrationClosed, todayIST } = require('../eventrules');
+const approval = require('../eventapproval');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -250,13 +251,20 @@ async function completion(m) {
 
 router.get('/me', wrap(async (req, res) => {
   const { rows } = await query(
-    `SELECT m.id, m.slug, m.member_code, m.full_name, m.designation, m.company, m.photo_url, a.temporary_password
+    `SELECT m.id, m.slug, m.member_code, m.full_name, m.designation, m.company, m.photo_url, m.member_types, a.temporary_password
      FROM members m JOIN member_accounts a ON a.member_id = m.id WHERE m.id = $1`,
     [me(req)],
   );
   await syncNotifications(req);
   const unread = await query('SELECT count(*)::int AS n FROM member_notifications WHERE member_id = $1 AND read_at IS NULL', [me(req)]);
-  res.json({ ...rows[0], unread: unread.rows[0].n });
+  const { member_types: types = [], ...m } = rows[0];
+  // Working Committee members add events; Executive Council members approve them (see event-submissions below).
+  const council = types.includes('core_team');
+  const waiting = council
+    ? (await query(`SELECT count(*)::int AS n FROM events WHERE approval_status = 'pending' AND submitted_by IS NOT NULL AND submitted_by <> $1`, [me(req)])).rows[0].n
+    : 0;
+  res.json({ ...m, unread: unread.rows[0].n, can_submit_events: types.includes('working_committee'), can_approve_events: council,
+    events_awaiting_approval: waiting });
 }));
 
 router.get('/meta', (req, res) => {
@@ -764,6 +772,164 @@ router.post('/events/:slug/register', wrap(async (req, res) => {
     `${event.title} on ${fmtDate(event.event_date)}${status === 'pending' ? ' – waiting for approval.' : '.'}`,
     `events/registrations/${result.ref}`, `registered:${result.ref}:${Date.now()}`);
   res.status(201).json(result);
+}));
+
+// ---------- Event submissions (Working Committee) and approvals (Executive Council) ----------
+// Only Working Committee members add events here. They stay off the website (published = false, approval_status
+// 'pending') until an Executive Council member (below) or an admin approves them; see src/eventapproval.js.
+
+async function rolesOf(memberId) {
+  const { rows } = await query('SELECT member_types FROM members WHERE id = $1', [memberId]);
+  const types = rows[0]?.member_types || [];
+  return { committee: types.includes('working_committee'), council: types.includes('core_team') };
+}
+const needRole = (role, error) => wrap(async (req, res, next) => {
+  if (!(await rolesOf(me(req)))[role]) return res.status(403).json({ error });
+  next();
+});
+const committeeOnly = needRole('committee', 'Only Working Committee members can add events.');
+const councilOnly = needRole('council', 'Only Executive Council members can approve events.');
+
+const SUB_COLS = `e.id, e.slug, e.title, e.category, e.short_description, e.description, e.event_date, e.start_time, e.end_time,
+  e.venue_name, e.venue_address, e.city, e.map_url, e.image_url, e.members_only, e.capacity, e.coordinator, e.published,
+  e.approval_status, e.submitted_by, e.submitted_at, e.reviewed_by, e.reviewed_at, e.review_note,
+  s.full_name AS submitted_by_name, s.designation AS submitted_by_designation, s.company AS submitted_by_company, s.photo_url AS submitted_by_photo`;
+const SUB_FROM = 'FROM events e LEFT JOIN members s ON s.id = e.submitted_by';
+
+const eventSlug = async (title, excludeId = 0) => {
+  const base = String(title).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80) || 'event';
+  for (let i = 1; ; i++) {
+    const slug = i === 1 ? base : `${base}-${i}`;
+    const { rows } = await query('SELECT 1 FROM events WHERE slug = $1 AND id <> $2', [slug, excludeId]);
+    if (!rows[0]) return slug;
+  }
+};
+
+// The fields a member fills in; returns { data } or { errors }.
+function eventInput(b = {}) {
+  const t = (k, max) => String(b[k] ?? '').trim().slice(0, max);
+  const data = {
+    title: t('title', 160), category: C.eventCategories.includes(b.category) ? b.category : 'spotlight',
+    short_description: t('short_description', 300), description: t('description', 5000),
+    event_date: t('event_date', 10), start_time: t('start_time', 5), end_time: t('end_time', 5) || null,
+    venue_name: t('venue_name', 160), venue_address: t('venue_address', 400), city: t('city', 80) || 'Hyderabad',
+    map_url: t('map_url', 500), image_url: t('image_url', 300), coordinator: t('coordinator', 160),
+    members_only: b.members_only === true || b.members_only === 'true' || b.members_only === 'on',
+    capacity: /^\d{1,5}$/.test(String(b.capacity ?? '').trim()) && Number(b.capacity) > 0 ? Number(b.capacity) : null,
+  };
+  const errors = {};
+  if (!data.title) errors.title = 'Enter the event name.';
+  if (!data.short_description) errors.short_description = 'Add a short description.';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data.event_date)) errors.event_date = 'Choose the event date.';
+  else if (data.event_date < todayIST()) errors.event_date = 'The event date cannot be in the past.';
+  if (!/^\d{2}:\d{2}$/.test(data.start_time)) errors.start_time = 'Choose the start time.';
+  if (data.end_time && !/^\d{2}:\d{2}$/.test(data.end_time)) errors.end_time = 'Choose a valid end time.';
+  else if (data.end_time && data.start_time && data.end_time <= data.start_time) errors.end_time = 'The end time must be after the start time.';
+  if (!data.venue_name) errors.venue_name = 'Enter the venue.';
+  if (data.map_url && !/^https:\/\/\S+$/i.test(data.map_url)) errors.map_url = 'Paste the full link, starting with https://';
+  if (data.image_url && !data.image_url.startsWith('/uploads/')) data.image_url = '';
+  if (String(b.capacity ?? '').trim() && data.capacity == null) errors.capacity = 'Enter a number, or leave it blank for no limit.';
+  return Object.keys(errors).length ? { errors } : { data };
+}
+
+// Tell the Executive Council members who can use the portal that an event is waiting for them.
+async function tellCouncil(e, submitterId, again = false) {
+  const { rows } = await query(
+    `SELECT m.id FROM members m JOIN member_accounts a ON a.member_id = m.id
+     WHERE m.member_types ? 'core_team' AND m.status = 'active' AND NOT a.disabled AND m.id <> $1`, [submitterId]);
+  for (const r of rows) {
+    await notify(r.id, 'event', `Event ${again ? 'sent again' : 'waiting'} for approval: ${e.title}`,
+      `${e.submitted_by_name || 'A Working Committee member'} added this event. Review it and approve or reject it.`,
+      `events/approvals/${e.id}`);
+  }
+}
+const subById = async (id) => (await query(`SELECT ${SUB_COLS} ${SUB_FROM} WHERE e.id = $1`, [id])).rows[0];
+
+router.get('/event-submissions', wrap(async (req, res) => {
+  const { rows } = await query(`SELECT ${SUB_COLS} ${SUB_FROM} WHERE e.submitted_by = $1 ORDER BY e.submitted_at DESC NULLS LAST, e.id DESC`, [me(req)]);
+  res.json({ items: rows, can_submit: (await rolesOf(me(req))).committee });
+}));
+
+router.get('/event-submissions/:id(\\d+)', wrap(async (req, res) => {
+  const e = await subById(req.params.id);
+  if (!e || e.submitted_by !== me(req)) return notFound(res, 'Event not found');
+  res.json(e);
+}));
+
+router.post('/event-submissions/image', committeeOnly, photoUpload.single('file'), wrap(async (req, res) => {
+  if (!req.file) return bad(res, 'Upload a JPG, PNG or WebP image up to 5 MB.');
+  res.status(201).json({ url: `/uploads/${req.file.filename}` });
+}));
+
+router.post('/event-submissions', committeeOnly, wrap(async (req, res) => {
+  const { data, errors } = eventInput(req.body);
+  if (errors) return bad(res, 'Please check the highlighted fields.', errors);
+  data.slug = await eventSlug(data.title);
+  const cols = Object.keys(data);
+  const { rows } = await query(
+    `INSERT INTO events (${cols.join(', ')}, published, approval_status, submitted_by, submitted_at, registration_open)
+     VALUES (${cols.map((_, i) => `$${i + 1}`).join(', ')}, false, 'pending', $${cols.length + 1}, now(), true) RETURNING id`,
+    [...Object.values(data), me(req)]);
+  const e = await subById(rows[0].id);
+  await tellCouncil(e, me(req));
+  res.status(201).json(e);
+}));
+
+// Change an event that is waiting or was not approved; it goes back to the Executive Council for approval.
+router.put('/event-submissions/:id(\\d+)', committeeOnly, wrap(async (req, res) => {
+  const old = await subById(req.params.id);
+  if (!old || old.submitted_by !== me(req)) return notFound(res, 'Event not found');
+  if (old.approval_status === 'approved') return bad(res, 'This event is already approved. Please ask an admin to change it.');
+  const { data, errors } = eventInput(req.body);
+  if (errors) return bad(res, 'Please check the highlighted fields.', errors);
+  if (data.title !== old.title) data.slug = await eventSlug(data.title, old.id);
+  const cols = Object.keys(data);
+  await query(
+    `UPDATE events SET ${cols.map((c, i) => `${c} = $${i + 1}`).join(', ')}, approval_status = 'pending', published = false,
+       submitted_at = now(), reviewed_by = '', reviewed_at = NULL, review_note = '', updated_at = now()
+     WHERE id = $${cols.length + 1} AND approval_status <> 'approved'`,
+    [...Object.values(data), old.id]);
+  const e = await subById(old.id);
+  await tellCouncil(e, me(req), true);
+  res.json(e);
+}));
+
+// Withdraw an event that is not approved yet.
+router.delete('/event-submissions/:id(\\d+)', committeeOnly, wrap(async (req, res) => {
+  const { rows } = await query(
+    `DELETE FROM events WHERE id = $1 AND submitted_by = $2 AND approval_status <> 'approved' RETURNING id`, [req.params.id, me(req)]);
+  if (!rows[0]) return bad(res, 'Only events that are not approved yet can be withdrawn.');
+  res.json({ ok: true });
+}));
+
+router.get('/event-approvals', councilOnly, wrap(async (req, res) => {
+  const status = ['pending', 'approved', 'rejected'].includes(req.query.status) ? req.query.status : 'pending';
+  const { rows } = await query(
+    `SELECT ${SUB_COLS} ${SUB_FROM} WHERE e.submitted_by IS NOT NULL AND e.approval_status = $1
+     ORDER BY ${status === 'pending' ? 'e.submitted_at ASC' : 'e.reviewed_at DESC NULLS LAST'}, e.id DESC LIMIT 200`, [status]);
+  const counts = await query(
+    `SELECT approval_status AS s, count(*)::int AS n FROM events WHERE submitted_by IS NOT NULL GROUP BY approval_status`);
+  res.json({ items: rows, counts: Object.fromEntries(counts.rows.map((r) => [r.s, r.n])) });
+}));
+
+router.get('/event-approvals/:id(\\d+)', councilOnly, wrap(async (req, res) => {
+  const e = await subById(req.params.id);
+  if (!e || !e.submitted_by) return notFound(res, 'Event not found');
+  res.json({ ...e, own: e.submitted_by === me(req) });
+}));
+
+router.post('/event-approvals/:id(\\d+)/:what(approve|reject)', councilOnly, wrap(async (req, res) => {
+  const e = await subById(req.params.id);
+  if (!e || !e.submitted_by) return notFound(res, 'Event not found');
+  if (e.submitted_by === me(req)) return res.status(403).json({ error: 'You cannot approve an event you added yourself.' });
+  if (e.approval_status !== 'pending') return bad(res, 'This event has already been reviewed.');
+  const note = String((req.body || {}).note || '').trim();
+  if (req.params.what === 'reject' && !note) return bad(res, 'Give a reason so the member can fix the event.', { note: 'Enter the reason.' });
+  const { rows } = await query('SELECT full_name FROM members WHERE id = $1', [me(req)]);
+  const by = `${rows[0].full_name} (Executive Council)`;
+  const done = req.params.what === 'approve' ? await approval.approve(e.id, by, note) : await approval.reject(e.id, by, note);
+  if (!done) return bad(res, 'This event has already been reviewed.');
+  res.json(await subById(e.id));
 }));
 
 const REG_COLS = `r.id, r.ref, r.status, r.status_reason, r.full_name, r.company, r.mobile, r.email, r.membership_id, r.notes,

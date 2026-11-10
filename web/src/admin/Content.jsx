@@ -275,6 +275,7 @@ function Editor({ name, item, onSaved }) {
         {def.fields(meta).map((f) => <FieldInput key={f[0]} spec={f} value={item[f[0]]} errors={errors} />)}
         {name === 'members' && item.id && <PortalAccess memberId={item.id} />}
       </div>
+      {name === 'events' && item.submitted_by && <EventApproval item={item} onDone={() => { closeModal(); onSaved(); }} />}
       <FormError message={formError} style={{ marginTop: 14 }} />
       <div className="actions">
         {item.id && <button type="button" className="btn btn-sm danger" onClick={remove}>Delete</button>}
@@ -282,6 +283,43 @@ function Editor({ name, item, onSaved }) {
         <button type="submit" className="btn btn-primary btn-sm" disabled={busy}>Save</button>
       </div>
     </form>
+  );
+}
+
+// Events added by Working Committee members in the Member Portal: approve (publishes it) or reject with a reason.
+// Executive Council members can do the same in the portal (Events > Event Approvals).
+function EventApproval({ item, onDone }) {
+  const { call, toast } = useAdmin();
+  const [busy, setBusy] = useState(false);
+  const pending = item.approval_status === 'pending';
+  async function act(what) {
+    const note = window.prompt(what === 'approve' ? 'Remarks for the member (optional):' : 'Why is this event not approved? The member will see this.', '');
+    if (note === null) return;
+    if (what === 'reject' && !note.trim()) { toast('Enter the reason.', true); return; }
+    setBusy(true);
+    try {
+      await call(`/events/${item.id}/${what}`, { method: 'POST', body: { note } });
+      toast(what === 'approve' ? 'Event approved and published on the website' : 'Event rejected; the member has been told');
+      onDone();
+    } catch (err) { toast(err.message, true); } finally { setBusy(false); }
+  }
+  return (
+    <div className={`ev-approval ${item.approval_status}`}>
+      <p>
+        <b>Added by {item.submitted_by_name || 'a member'} (Working Committee)</b>
+        {item.submitted_at && <> on {fmt.stamp(item.submitted_at)}</>}.{' '}
+        {pending && 'It is not on the website until an Executive Council member or an admin approves it.'}
+        {item.approval_status === 'approved' && <>Approved by {item.reviewed_by}{item.reviewed_at && <> on {fmt.stamp(item.reviewed_at)}</>}.</>}
+        {item.approval_status === 'rejected' && <>Not approved by {item.reviewed_by}. The member can change it and send it again.</>}
+      </p>
+      {item.review_note && <p className="hint">{item.approval_status === 'rejected' ? 'Reason' : 'Remarks'}: {item.review_note}</p>}
+      {item.approval_status !== 'approved' && (
+        <div className="ev-approval-acts">
+          <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => act('approve')}><Icon name="check" /> Approve &amp; Publish</button>
+          {pending && <button type="button" className="btn btn-outline btn-sm" disabled={busy} onClick={() => act('reject')}><Icon name="x" /> Reject</button>}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -303,13 +341,14 @@ const LISTS = {
       ['calendar', 'blue', 'Upcoming Events', items.filter((e) => eventStatus(e) === 'upcoming').length, 'Scheduled future events', 'upcoming'],
       ['check-circle', 'green', 'Completed Events', items.filter((e) => eventStatus(e) === 'completed').length, 'Events already conducted', 'completed'],
       ['users', 'orange', 'Total Registrations', items.reduce((n, e) => n + (e.registrations || 0), 0), 'Registrations across all events', null, 'registrations'],
+      ['clock', 'orange', 'Awaiting Approval', items.filter((e) => eventStatus(e) === 'awaiting').length, 'Added by the Working Committee', 'awaiting'],
     ],
     tabs: (items) => [['', 'All Events', items.length], ['spotlight', 'Spotlight', items.filter((e) => e.category !== 'workshop').length],
       ['workshop', 'Workshop', items.filter((e) => e.category === 'workshop').length]],
     tabMatch: (e, t) => !t || (t === 'workshop' ? e.category === 'workshop' : e.category !== 'workshop'),
     search: 'Search event name…',
     text: (e) => [e.title, e.venue_name, e.short_description],
-    statuses: [['upcoming', 'Upcoming'], ['completed', 'Completed'], ['draft', 'Draft']],
+    statuses: [['awaiting', 'Awaiting Approval'], ['upcoming', 'Upcoming'], ['completed', 'Completed'], ['draft', 'Draft'], ['rejected', 'Rejected']],
     dates: { label: 'All Dates', options: [['future', 'Upcoming dates'], ['30', 'Next 30 days'], ['past', 'Past events']],
       match: (e, v) => {
         const d = String(e.event_date || '').slice(0, 10);
@@ -322,7 +361,8 @@ const LISTS = {
     action: 'Manage',
     columns: [
       { key: 'title', label: 'Event', sort: (e) => e.title, render: (e) => (
-        <span className="a-item"><Thumb url={e.image_url} /><span><b>{e.title}</b><small>{e.short_description}</small></span></span>
+        <span className="a-item"><Thumb url={e.image_url} /><span><b>{e.title}</b>
+          <small>{e.submitted_by_name ? `Added by ${e.submitted_by_name} (Working Committee)` : e.short_description}</small></span></span>
       ) },
       { key: 'type', label: 'Type', sort: (e) => e.category, render: (e) => <TypePill type={e.category} /> },
       { key: 'date', label: 'Date & Time', sort: (e) => `${e.event_date}${e.start_time}`, render: (e) => <When date={e.event_date} start={e.start_time} end={e.end_time} /> },
@@ -466,7 +506,7 @@ function ContentList({ name, query, items }) {
       <PageHead title={list.title} sub={list.sub}>
         <button className="btn btn-primary" type="button" onClick={() => edit({ ...def.defaults })}><Icon name="plus" /> {list.add}</button>
       </PageHead>
-      <div className="a-stats">
+      <div className={`a-stats${list.stats(items).length === 4 ? ' four' : ''}`}>
         {list.stats(items).map(([icon, tone, title, n, sub, status, hash]) => (
           <StatCard key={title} icon={icon} tone={tone} title={title} value={n} sub={sub}
             onClick={() => go(hash || `${name}${status ? `?status=${status}` : ''}`)} />

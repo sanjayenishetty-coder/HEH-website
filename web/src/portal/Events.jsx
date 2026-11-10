@@ -8,25 +8,47 @@ import { usePortal } from './Portal.jsx';
 import {
   Card, DateBox, Dialog, Empty, EventMeta, Field, Head, KV, Load, Pill, Select, Stat, StatusPill, Tabs, day, eventState, useAction, useData,
 } from './parts.jsx';
+import { Approvals, ApprovalDetails, MySubmissions, SubmissionDetails, SubmitEvent } from './EventSubmit.jsx';
 
 const TABS = [['', 'Upcoming Events'], ['past', 'Past Events'], ['registrations', 'My Registrations'], ['calendar', 'Event Calendar']];
 const TYPES = [['spotlight', 'Networking'], ['workshop', 'Workshop']];
 
+// Working Committee members also get "My Event Submissions" (they add events) and Executive Council members
+// "Event Approvals" (they approve them before they show on the website): EventSubmit.jsx.
+const EXTRA = ['submissions', 'approvals', 'submit'];
+
 export default function Events({ path, query }) {
+  const { me } = usePortal();
   const [a, b] = path;
   if (a === 'registrations' && b) return <Registration refId={b} fresh={query.get('new') === '1'} />;
   if (a === 'history') return <History />;
-  if (a && !TABS.some(([k]) => k === a)) return b === 'register' ? <Register slug={a} /> : <EventDetails slug={a} />;
+  if (a === 'submit') return <SubmitEvent id={b} />;
+  if (a === 'submissions' && b) return <SubmissionDetails id={b} />;
+  if (a === 'approvals' && b) return <ApprovalDetails id={b} />;
+  if (a && !TABS.some(([k]) => k === a) && !EXTRA.includes(a)) return b === 'register' ? <Register slug={a} /> : <EventDetails slug={a} />;
   const tab = a || '';
+  const tabs = [...TABS,
+    ...(me.can_submit_events ? [['submissions', 'My Event Submissions']] : []),
+    ...(me.can_approve_events ? [['approvals', 'Event Approvals', null, me.events_awaiting_approval || null]] : [])];
+  const titles = {
+    calendar: ['Event Calendar', 'Explore upcoming events and manage your participation'],
+    past: ['Past Events', 'Explore previous HEH events and your participation'],
+    registrations: ['My Registrations', 'Manage your HEH event registrations and participation'],
+    submissions: ['My Event Submissions', 'Events you added and their approval by the Executive Council'],
+    approvals: ['Event Approvals', 'Approve events added by the Working Committee before they appear on the website'],
+  };
+  const [title, sub] = titles[tab] || ['Events Overview', 'Discover, register and participate in HEH events'];
   return (
     <>
-      <Head title={tab === 'calendar' ? 'Event Calendar' : tab === 'past' ? 'Past Events' : tab === 'registrations' ? 'My Registrations' : 'Events Overview'}
-        sub={tab === 'past' ? 'Explore previous HEH events and your participation' : tab === 'registrations' ? 'Manage your HEH event registrations and participation'
-          : tab === 'calendar' ? 'Explore upcoming events and manage your participation' : 'Discover, register and participate in HEH events'} back="dashboard" />
-      <Tabs items={TABS} value={tab} base="events" />
+      <Head title={title} sub={sub} back="dashboard">
+        {me.can_submit_events && tab !== 'submissions' && <a className="p-btn" href="#events/submit"><Icon name="plus" /> Add Event</a>}
+      </Head>
+      <Tabs items={tabs} value={tab} base="events" />
       {(tab === '' || tab === 'past') && <EventList when={tab === 'past' ? 'past' : 'upcoming'} query={query} />}
       {tab === 'registrations' && <MyRegistrations />}
       {tab === 'calendar' && <Calendar query={query} />}
+      {tab === 'submissions' && <MySubmissions />}
+      {tab === 'approvals' && <Approvals query={query} />}
     </>
   );
 }

@@ -40,7 +40,7 @@ export default function PortalAccess({ memberId }) {
       {!has && <p className="hint">This member cannot sign in to the Member Portal yet. Turning access on creates a temporary password for you to share with them.</p>}
       {has && (
         <p className="hint">
-          Sign-in: {info.disabled ? <b className="off">Turned off</b> : <b className="on">Active</b>} · Signs in with <b>{info.member_code}</b>{info.email ? <> or <b>{info.email}</b></> : ''}
+          Sign-in: {info.disabled ? <b className="off">Turned off</b> : <b className="on">Active</b>} · Signs in with <b>{info.email || 'no email address (add one to the member)'}</b>
           {' '}· Last sign-in: {info.last_login_at ? fmt.stamp(info.last_login_at) : 'never'}{info.temporary_password ? ' · still on the temporary password' : ''}
         </p>
       )}

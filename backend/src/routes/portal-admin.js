@@ -37,7 +37,9 @@ router.get('/members/:id(\\d+)/portal', wrap(async (req, res) => {
 router.post('/members/:id(\\d+)/portal', wrap(async (req, res) => {
   const info = await portalInfo(req.params.id);
   if (!info) return notFound(res);
-  if (!info.member_code) return res.status(400).json({ error: 'Give this member an HEH Membership ID first.' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(info.email || '')) {
+    return res.status(400).json({ error: 'Add this member\'s email address first: members sign in with their email.' });
+  }
   const password = memberAuth.temporaryPassword();
   const hash = await bcrypt.hash(password, 12);
   await query(

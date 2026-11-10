@@ -6,7 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import './admin.css';
 import { api } from '../lib/api.js';
 import { Icon } from '../components/Icon.jsx';
-import Login from './Login.jsx';
+import { toLogin } from './toLogin.js';
 import Dashboard from './Dashboard.jsx';
 import Submissions from './Submissions.jsx';
 import Content from './Content.jsx';
@@ -43,8 +43,7 @@ const readHash = () => {
 
 
 export default function Admin() {
-  const [auth, setAuth] = useState('checking'); // checking | login | app
-  const [expired, setExpired] = useState(false); // signed out by a 401 while working
+  const [auth, setAuth] = useState('checking'); // checking | login (on the way to /login) | app
   const [user, setUser] = useState('Admin');
   const [meta, setMeta] = useState({ industries: [], storyCategories: [], eventCategories: [], memberTypes: [] });
   const [route, setRoute] = useState(readHash);
@@ -80,7 +79,12 @@ export default function Admin() {
     toastTimer.current = setTimeout(() => setToastMsg(null), 3000);
   }, []);
 
-  const showLogin = useCallback((wasExpired = false) => { setModal(null); setExpired(wasExpired); setAuth('login'); }, []);
+  // Sign-in is on /login (wasExpired: the session ended while working; signedOut: after "Sign out").
+  const showLogin = useCallback((wasExpired = false, signedOut = false) => {
+    setModal(null);
+    setAuth('login');
+    toLogin('admin', { expired: wasExpired, back: !signedOut });
+  }, []);
 
   const call = useCallback(async (path, opts) => {
     try {
@@ -107,7 +111,7 @@ export default function Admin() {
 
   async function logout() {
     await api('/admin/logout', { method: 'POST' }).catch(() => {});
-    showLogin();
+    showLogin(false, true);
   }
 
   const ctx = { call, toast, openModal: setModal, closeModal, meta, go, reload, showLogin, user };
@@ -117,8 +121,6 @@ export default function Admin() {
 
   return (
     <Ctx.Provider value={ctx}>
-      {auth === 'login' && <Login onSignedIn={showApp} expired={expired} />}
-
       {auth === 'app' && (
         <Shell tab={tab} path={path.join('/')} query={query} user={user} onLogout={logout} call={call} reloadKey={reloadKey}>
           {Sub && <Sub key={viewKey} path={path} query={query} />}

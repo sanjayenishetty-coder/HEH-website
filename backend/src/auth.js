@@ -34,8 +34,11 @@ async function findAdmin(login) {
 }
 
 let dummyHash;
+// Sign-in is by email address only (the username is not accepted any more).
 async function checkCredentials(login, password) {
-  const admin = await findAdmin(login);
+  const s = String(login || '').trim().toLowerCase();
+  const found = s.includes('@') ? await findAdmin(s) : null;
+  const admin = found && String(found.email || '').toLowerCase() === s ? found : null;
   // Trim so a password copied with stray spaces/newlines still works; compare even when there is no such
   // account so the response time doesn't reveal which usernames exist.
   dummyHash ||= await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 12);

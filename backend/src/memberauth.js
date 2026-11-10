@@ -18,14 +18,14 @@ const sameText = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffe
 const ACCOUNT_COLS = `a.id AS account_id, a.password_hash, a.temporary_password, a.disabled, a.sessions_valid_after,
   m.id, m.slug, m.member_code, m.full_name, m.email, m.status`;
 
-// Email address or HEH Membership ID, any case. Only members with portal access.
+// Members sign in with their email address (any case). Only members with portal access.
 async function findAccount(login) {
   const s = String(login || '').trim().toLowerCase();
-  if (!s) return null;
+  if (!s || !s.includes('@')) return null;
   const { rows } = await query(
     `SELECT ${ACCOUNT_COLS} FROM member_accounts a JOIN members m ON m.id = a.member_id
-     WHERE lower(m.member_code) = $1 OR lower(m.email) = $1
-     ORDER BY (lower(m.member_code) = $1) DESC, m.status = 'active' DESC LIMIT 1`,
+     WHERE lower(m.email) = $1
+     ORDER BY m.status = 'active' DESC, a.disabled ASC LIMIT 1`,
     [s],
   );
   return rows[0] || null;
@@ -37,7 +37,7 @@ async function checkCredentials(login, password) {
   const acc = await findAccount(login);
   dummyHash ||= await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 12);
   const ok = await bcrypt.compare(String(password || '').trim(), acc?.password_hash || dummyHash);
-  if (!ok || !acc) return { error: 'Incorrect email / Membership ID or password.' };
+  if (!ok || !acc) return { error: 'Incorrect email or password.' };
   if (acc.disabled || acc.status !== 'active') return { error: 'Your Member Portal access is not active. Please contact HEH.' };
   return { account: acc };
 }

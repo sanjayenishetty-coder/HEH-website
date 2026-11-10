@@ -180,14 +180,18 @@ const STATUS = {
   draft: ['Draft', 'grey'],
   published: ['Published', 'green'],
   pending: ['Pending Approval', 'orange'],
+  awaiting: ['Awaiting Approval', 'orange'],
   archived: ['Archived', 'grey'],
 };
 export const statusLabel = (s) => STATUS[s]?.[0] || String(s || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 export const StatusPill = ({ status }) => <span className={`a-pill ${STATUS[status]?.[1] || 'grey'}`}>{statusLabel(status)}</span>;
 export const TypePill = ({ type }) => <span className={`a-pill ${type === 'workshop' ? 'orange' : 'blue'} soft`}>{type === 'workshop' ? 'Workshop' : 'Spotlight'}</span>;
 
-// Event state shown in lists: draft (unpublished), upcoming, completed.
+// Event state shown in lists: awaiting approval / rejected (added by the Working Committee in the Member Portal),
+// draft (unpublished), upcoming, completed.
 export const eventStatus = (e) => {
+  if (e.approval_status === 'pending') return 'awaiting';
+  if (e.approval_status === 'rejected') return 'rejected';
   if (!e.published) return 'draft';
   const today = new Date(Date.now() + 5.5 * 3600000).toISOString().slice(0, 10); // India date
   return e.event_date && String(e.event_date).slice(0, 10) < today ? 'completed' : 'upcoming';

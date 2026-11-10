@@ -79,7 +79,12 @@ types (Executive Council (key core_team) / Working Committee / Advisory Board, l
 
 ## Admin
 
-`/admin/` — sign in with `ADMIN_USER` / the password whose hash is in `ADMIN_PASSWORD_HASH`.
+Everyone signs in on one page, `/login` (the website's Login button), with their **email address** and password;
+`/admin/` and `/portal/` send signed-out visitors there, and after signing in admins go to `/admin/` and members to
+`/portal/`. Usernames and Membership IDs are not accepted, so every admin account needs an email (the first one gets
+`ADMIN_EMAIL` from `.env`).
+
+`/admin/` — the first admin account is created from `ADMIN_USER` / `ADMIN_EMAIL` / the password whose hash is in `ADMIN_PASSWORD_HASH`.
 Manage events (agenda, speaker, photos, highlights), members (profiles; the Membership ID is what members
 enter to register for events), success stories, and follow up membership applications, enquiries and
 event registrations (status, internal notes, CSV export). Uploaded images go to `/srv/heh/prod/uploads`.
@@ -93,8 +98,14 @@ Sign-in ignores surrounding spaces; 10 failed attempts lock it for 15 minutes.
 
 `/portal/` — for HEH members. In `/admin/`, open a member (Members > the member) and use **Member Portal access >
 Turn on portal access**; this creates a temporary password, shown once, to give the member. They sign in with
-their email or HEH Membership ID and are asked to choose their own password. From the same box you can reset the
-password, turn access off, and verify the documents the member uploads. Members can reset a forgotten password
+their email address (the member needs one before access can be turned on) and are asked to choose their own password. From the same box you can reset the
+password, turn access off, and verify the documents the member uploads.
+
+**Events from the Working Committee.** Only Working Committee members can add events, in the portal under
+**Events > Add Event**. A new event is not shown anywhere on the website until an Executive Council member approves
+it (**Events > Event Approvals** in the portal) or an admin does (**Events**, filter *Awaiting Approval*, open the
+event, **Approve & Publish**). A rejected event goes back to the member with the reason so they can fix and resend it.
+Who is in which group is set in Admin > Members > edit member (Executive Council / Working Committee). Members can reset a forgotten password
 by email once `SMTP_*` is set up. Event videos for the portal gallery are added in the event editor.
 
 ## Deploy

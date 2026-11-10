@@ -88,6 +88,7 @@ body.admin { background: #f4f6f9; font-size: 15px; }
 .a-card { background: #fff; border: 1px solid var(--line-cool); border-radius: 12px; box-shadow: 0 2px 10px rgba(13, 42, 79, .03); }
 .a-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
 .a-stats.five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.a-stats.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .a-stat {
   display: flex; align-items: center; gap: 18px; width: 100%; padding: 18px 20px; text-align: left; font: inherit; color: inherit;
   background: #fff; border: 1px solid var(--line-cool); border-radius: 12px; box-shadow: 0 2px 10px rgba(13, 42, 79, .03);
@@ -233,6 +234,7 @@ table.data.a-table small, table.data.a-table .sub { display: block; margin-top: 
 /* ---------- Narrower screens ---------- */
 @media (max-width: 1280px) {
   .a-stats.five { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .a-stats.four { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dash-grid.bottom { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .dash-grid.bottom > :first-child { grid-column: 1 / -1; }
   .adm-search { width: 220px; }
@@ -275,7 +277,7 @@ table.data.a-table small, table.data.a-table .sub { display: block; margin-top: 
   .workspace { padding: 18px 14px 32px; }
   .page-head { flex-direction: column; }
   .page-actions, .page-actions .btn { width: 100%; }
-  .a-stats, .a-stats.five { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .a-stats, .a-stats.five, .a-stats.four { grid-template-columns: minmax(0, 1fr); gap: 10px; }
   .a-stat { padding: 14px 16px; }
   .a-filters .btn { flex: 1 1 0; }
   .a-select { max-width: none; flex-basis: 100%; }
@@ -492,3 +494,11 @@ table.data .sub { color: var(--muted); font-size: 12.5px; }
 .pa-doc a { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--navy); }
 .pa-doc a:hover { color: var(--orange); }
 .pa-doc small { color: var(--muted); margin-right: auto; }
+
+/* Working Committee event approval box in the event editor (Content.jsx EventApproval) */
+.ev-approval { margin-top: 16px; padding: 12px 14px; border: 1px solid #ffd7bd; border-radius: 10px; background: #fff6ef; font-size: 14.5px; }
+.ev-approval.approved { border-color: #cdebd8; background: #f2fbf5; }
+.ev-approval.rejected { border-color: #f6cfcb; background: #fff6f5; }
+.ev-approval p { margin: 0; }
+.ev-approval .hint { margin-top: 6px; }
+.ev-approval-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }

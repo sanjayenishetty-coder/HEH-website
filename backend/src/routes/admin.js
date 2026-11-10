@@ -11,6 +11,7 @@ const config = require('../config');
 const { uploadDir } = config;
 const C = require('../constants');
 const activity = require('../activity');
+const approval = require('../eventapproval');
 
 const router = express.Router();
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -235,8 +236,11 @@ const resources = {
       registration_opens: asDate, registration_closes: asDate,
       approval_mode: (v) => (v === 'manual' ? 'manual' : 'auto'),
     },
+    // Working Committee events (Member Portal) and who reviewed them, for the approval box in the editor.
+    detailCols: '(SELECT full_name FROM members m WHERE m.id = events.submitted_by) AS submitted_by_name',
     listCols: `id, slug, title, category, event_date, start_time, end_time, venue_name, image_url, short_description, published, registration_open,
-      capacity, approval_mode, coordinator,
+      capacity, approval_mode, coordinator, approval_status, submitted_by, submitted_at,
+      (SELECT full_name FROM members m WHERE m.id = events.submitted_by) AS submitted_by_name,
       (SELECT count(*)::int FROM event_registrations r WHERE r.event_id = events.id AND r.status = 'pending') AS pending,
       (SELECT count(*)::int FROM event_registrations r WHERE r.event_id = events.id AND r.status <> 'cancelled') AS registrations`,
   },
@@ -299,7 +303,7 @@ for (const [name, def] of Object.entries(resources)) {
   }));
 
   router.get(`/${name}/:id(\\d+)`, wrap(async (req, res) => {
-    const { rows } = await query(`SELECT * FROM ${def.table} WHERE id = $1`, [req.params.id]);
+    const { rows } = await query(`SELECT *${def.detailCols ? `, ${def.detailCols}` : ''} FROM ${def.table} WHERE id = $1`, [req.params.id]);
     if (!rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);
   }));
@@ -322,6 +326,14 @@ for (const [name, def] of Object.entries(resources)) {
     const data = clean(def, req.body || {});
     if (def.titleField in data && !data[def.titleField]) return bad(res, 'Name / title is required.');
     if (req.body.slug) data.slug = await uniqueSlug(def.table, slugify(req.body.slug), Number(req.params.id));
+    // Publishing an event that is waiting for approval approves it (src/eventapproval.js tells the member).
+    if (name === 'events' && data.published) {
+      const cur = await query('SELECT approval_status FROM events WHERE id = $1', [req.params.id]);
+      if (cur.rows[0] && cur.rows[0].approval_status !== 'approved') {
+        await approval.approve(Number(req.params.id), `${req.admin.username} (Admin)`);
+        await activity.log(req, 'events', 'Event Approved', { id: Number(req.params.id), ref: data.title || '' });
+      }
+    }
     const cols = Object.keys(data);
     if (!cols.length) return bad(res, 'Nothing to update.');
     const { rows } = await query(
