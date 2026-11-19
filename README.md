@@ -170,6 +170,8 @@ On Windows git-bash, use `tar --force-local` when packing files from a `C:` path
 
 ## Moving to another server or domain
 
+**Full step-by-step guide for a new server (e.g. entrepreneurhub.in): [DEPLOYMENT.md](DEPLOYMENT.md).**
+
 The site needs a Linux server (VPS) with Node.js 20, PostgreSQL 14+ (16 preferred; not MySQL: the schema uses
 `jsonb` and PostgreSQL-only SQL) and nginx. Static hosts such as Vercel or shared cPanel hosting cannot run it.
 Note: the `heh_test` database holds the **live** data despite its name.
