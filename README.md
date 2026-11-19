@@ -21,8 +21,12 @@ web/                       The website + admin panel: React 18 + react-router, b
                            Event, EventRegister, Community, Members, Member, SuccessStories, Story, Faqs,
                            OurMembers, WhyHeh, WhoCanJoin, MemberVoices, MembershipPlan, ...)
                            The header "About HEH" drop-down list is ABOUT_MENU in components/Layout.jsx;
-                           its "Members" item is OurMembers (/our-members, grouped by member type), separate
-                           from the Community section's member directory (/members)
+                           its "Board Members" item is OurMembers (/our-members, grouped by member type), separate
+                           from the Community section's member directory (/members). That page shows the groups as
+                           Executive Council / Working Board / Advisory (HEADING in OurMembers.jsx renames them only
+                           there; admin and the portal keep Working Committee / Advisory Board).
+                           Home's "Who Can Apply?" is a split layout with tinted numbered tiles (.who-apply in
+                           styles.css), deliberately unlike the white feature cards above it
   src/admin/               Admin panel (/admin/): Login, Dashboard, Submissions, Content editors
   src/portal/              Member Portal (/portal/): dashboard, profile, directory, connections, events, gallery
   scripts/route-pages.js   Post-build: copies dist/index.html to about.html, events.html, admin/index.html ...
@@ -75,7 +79,10 @@ npm run db:migrate:new -- add_x_column # create migrations/NNNN_add_x_column.sql
 
 Never edit a migration that has been applied (the runner refuses: "Already-applied migrations were
 edited"); add a new one. `0001` is the initial schema, `0002` loads the HEH member list, `0003` adds member
-types (Executive Council (key core_team) / Working Committee / Advisory Board, list in `backend/src/constants.js`) shown on `/our-members`.
+types (Executive Council (key core_team) / Working Committee / Advisory Board, list in `backend/src/constants.js`) shown on `/our-members`
+(as Executive Council / Working Board / Advisory). Member photos shipped with the site live in `web/public/assets/team/`;
+to replace one, add the new image under a **new file name** (team photos are cached for a day) and point the member's
+`photo_url` at it in a new migration (as `0020`/`0021` do) or in Admin > Members.
 
 ## Admin
 
