@@ -62,14 +62,26 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Who Can Apply: a split layout with tinted tiles, so it reads differently from the feature cards above */}
       <section className="section flush-top">
-        <div className="container">
-          <h2 className="title">Who Can Apply?</h2>
-          <p style={{ margin: '14px 0 24px', maxWidth: 760 }}>HEH welcomes entrepreneurs and business leaders who are committed to active participation and professional collaboration.</p>
-          <FeatureGrid items={WHO} />
-          <div className="notice" style={{ marginTop: 16 }}>
-            <Icon name="info" />
-            <span>Membership is subject to eligibility criteria, category availability and approval by the HEH Membership Committee.</span>
+        <div className="container who-apply">
+          <div className="who-intro">
+            <h2 className="title">Who Can Apply?</h2>
+            <p className="lead">HEH welcomes entrepreneurs and business leaders who are committed to active participation and professional collaboration.</p>
+            <p className="who-note"><Icon name="info" /> Membership is subject to eligibility criteria, category availability and approval by the HEH Membership Committee.</p>
+            <div className="btn-row">
+              <Link className="btn btn-primary" to="/membership-apply">Apply for Membership <Icon name="arrow-right" /></Link>
+              <Link className="btn btn-outline" to="/who-can-join">Check Eligibility</Link>
+            </div>
+          </div>
+          <div className="who-tiles">
+            {WHO.map(([icon, tone, title, text], i) => (
+              <div className={`who-tile ${tone || 'orange'}`} key={title} data-n={String(i + 1).padStart(2, '0')}>
+                <Ic name={icon} tone={tone} />
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -89,9 +89,11 @@ Manage events (agenda, speaker, photos, highlights), members (profiles; the Memb
 enter to register for events), success stories, and follow up membership applications, enquiries and
 event registrations (status, internal notes, CSV export). Uploaded images go to `/srv/heh/prod/uploads`.
 
-To change the admin password: `npm run hash-password -- 'new-password'`, put the result in
-`/srv/heh/prod/backend/.env` (edit the file directly; the hash contains `$` characters that a shell
-will mangle if you pass it through a variable), then `systemctl restart heh-api`.
+Admin accounts and their passwords are stored in the `admin_users` table (the `.env` values are only used to
+create the first account when the table is empty). The live admin signs in with `heh@entrepreneurhub.in`.
+"Forgot Password?" emails a reset link once `SMTP_*` is set up; until then a lost password is reset on the server
+(make a bcrypt hash with `npm run hash-password -- 'new-password'` and update `admin_users.password_hash`; the hash
+contains `$` characters that a shell will mangle if you pass it through a variable).
 Sign-in ignores surrounding spaces; 10 failed attempts lock it for 15 minutes.
 
 ## Member Portal
@@ -129,12 +131,14 @@ Both nginx sites proxy `/api/` to `127.0.0.1:1502`, serve `/uploads/`, and send 
 for the site so browsers always re-check for new versions (see `deploy/nginx-heh-locations.conf`).
 
 Frontend change (no restart needed): `cd web && npm run build`, then replace the contents of
-`/srv/heh/prod/frontend` with `web/dist` (upload to a new folder on the server and swap it in, keeping the
-old one in `backups/`).
+`/srv/heh/prod/frontend` with `web/dist`: upload it to a new folder on the server, copy the current
+`frontend/assets/*` into it with `cp -n` (browser tabs opened before the update still ask for the old hashed
+admin/portal files; without them those tabs show a blank page), then swap it in, keeping the old one in `backups/`.
 
 Backend change: copy `backend/src`, `backend/migrations` (and `package*.json` if dependencies changed) to
 `/srv/heh/prod/backend`, run `npm ci --omit=dev` there if needed, then `sudo -u heh node src/migrate.js`
-and `systemctl restart heh-api`. Migrations are applied through `0018_member_portal.sql` (Member Portal).
+and `systemctl restart heh-api`. Migrations are applied through `0021_jayalakshmi_photo.sql`
+(0018 Member Portal, 0019 event approval, 0020/0021 member photo and title updates).
 The private folder for member documents must exist and belong to `heh`
 (`mkdir -p /srv/heh/prod/uploads-documents && chown heh:heh /srv/heh/prod/uploads-documents && chmod 750 ...`;
 created on 9 Nov 2026). Never put it under `uploads/`, which nginx serves publicly.
@@ -156,6 +160,22 @@ On Windows git-bash, use `tar --force-local` when packing files from a `C:` path
 - Member Portal: turn on portal access for each member in `/admin/` (Members > member > Member Portal access) and
   share the temporary password; set up `SMTP_*` so members can reset forgotten passwords and get email notices.
 - Contact details (email, phone/WhatsApp, address, LinkedIn, Facebook) come from entrepreneurhub.in: `web/src/pages/Contact.jsx` and the footer in `web/src/components/Layout.jsx`.
+
+## Moving to another server or domain
+
+The site needs a Linux server (VPS) with Node.js 20, PostgreSQL 14+ (16 preferred; not MySQL: the schema uses
+`jsonb` and PostgreSQL-only SQL) and nginx. Static hosts such as Vercel or shared cPanel hosting cannot run it.
+Note: the `heh_test` database holds the **live** data despite its name.
+
+1. Set up the new server: install Node.js, PostgreSQL and nginx; create the database and role.
+2. Copy the code (`backend/` with `npm ci --omit=dev`, built `web/dist`), the `.env` (send it securely), a database
+   dump (`pg_dump -Fc heh_test`, restore with `pg_restore`), `uploads/` and the private `uploads-documents/`.
+3. Run the API as a systemd service and use the nginx locations in `deploy/nginx-heh-locations.conf`.
+4. Test on the server's IP, then freeze admin changes, take a final dump + uploads copy and restore it.
+5. Point DNS at the new server. For entrepreneurhub.in (DNS at GoDaddy, the old site is a Next.js site on Vercel
+   with no database) change only the `@` A record and `www` to the new IP; **leave the MX and TXT records alone**,
+   they carry the Google email. Then issue the SSL certificate with certbot and set `SITE_URL` in `.env`.
+6. Keep the old server for a week or two as a fallback (switch the two DNS records back to undo).
 
 > The server hosts other projects (kvgc, yoga, stock360, zoofilings, batterydukaan, whatsapp, ...).
 > Only touch `/srv/heh`, `heh-api.service`, the `heh_test` database and the two `heh-*` nginx files.

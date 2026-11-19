@@ -963,3 +963,27 @@ a.team-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(13
   .notice .divider { display: none; }
   .dot-list { gap: 12px; }
 }
+
+/* Home: Who Can Apply (split layout with tinted, numbered tiles; differs from the white feature cards above) */
+.who-apply { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 48px; align-items: center; }
+.who-intro .lead { margin: 16px 0 18px; font-size: 17px; color: var(--ink); }
+.who-note { display: flex; gap: 10px; margin: 0 0 24px; padding-left: 14px; border-left: 3px solid var(--orange); font-size: 14.5px; color: var(--muted); }
+.who-note .i { flex: none; width: 20px; height: 20px; margin-top: 1px; color: var(--orange); }
+.who-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.who-tile { position: relative; overflow: hidden; padding: 26px 24px 24px; border-radius: 20px; background: var(--orange-soft); color: var(--orange); }
+.who-tile.blue { background: var(--blue-soft); color: var(--blue); }
+.who-tile.green { background: var(--green-soft); color: var(--green); }
+.who-tile.purple { background: var(--purple-soft); color: var(--purple); }
+.who-tile::after { content: attr(data-n); position: absolute; top: 14px; right: 20px; font: 700 46px/1 var(--serif); color: currentColor; opacity: .14; }
+.who-tile .ic { margin-bottom: 18px; background: #fff; box-shadow: 0 6px 16px rgba(13, 42, 79, .08); }
+.who-tile h3 { margin-bottom: 6px; font-size: 20px; color: var(--navy); }
+.who-tile p { font-size: 14.5px; color: var(--ink); opacity: .8; }
+@media (max-width: 960px) { .who-apply { grid-template-columns: minmax(0, 1fr); gap: 28px; } }
+@media (max-width: 520px) {
+  .who-tiles { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .who-tile { padding: 20px 18px; }
+}
+.who-intro .btn-row { gap: 12px; flex-wrap: nowrap; }
+.who-intro .btn { padding: 13px 20px; font-size: 15px; white-space: nowrap; }
+@media (max-width: 1080px) and (min-width: 961px) { .who-intro .btn-row { flex-wrap: wrap; } }
+@media (max-width: 520px) { .who-intro .btn-row { flex-wrap: wrap; } }

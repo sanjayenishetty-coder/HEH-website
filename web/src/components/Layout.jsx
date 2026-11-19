@@ -14,7 +14,7 @@ const NAV = [
 // Drop-down under "About HEH" (opens on hover/focus on desktop, taps open it in the phone menu).
 const ABOUT_MENU = [
   ['/about', 'About Us'],
-  ['/our-members', 'Members'],
+  ['/our-members', 'Board Members'],
   ['/why-heh', 'Why HEH'],
   ['/who-can-join', 'Who Can Join'],
   ['/membership-plan', 'Membership Details'],

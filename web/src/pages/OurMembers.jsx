@@ -11,6 +11,9 @@ const INTRO = {
   advisory_board: 'Experienced entrepreneurs and mentors who guide the direction and growth of the HEH community.',
 };
 
+// Section names shown on this page when they differ from the group names used in admin and the portal.
+const HEADING = { working_committee: 'Working Board', advisory_board: 'Advisory' };
+
 // The API sends up to 40 members at a time; keep asking until we have them all.
 async function allMembers() {
   const all = [];
@@ -63,7 +66,8 @@ export default function OurMembers() {
       {loading && <div className="container"><Loading text="Loading members…" /></div>}
       {error && <div className="container" style={{ padding: '40px 0' }}><p className="form-error">Could not load the members. Please refresh the page.</p></div>}
 
-      {!loading && !error && types.map(([key, label], i) => {
+      {!loading && !error && types.map(([key, groupName], i) => {
+        const label = HEADING[key] || groupName;
         // team_order 1, 2, 3… first (as set in /admin/), then the rest in directory order (the API's order)
         const rank = (m) => (m.team_order > 0 ? m.team_order : 1e9);
         const group = members.filter((m) => (m.member_types || []).includes(key)).sort((a, b) => rank(a) - rank(b));
