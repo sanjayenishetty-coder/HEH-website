@@ -119,7 +119,7 @@ by email once `SMTP_*` is set up. Event videos for the portal gallery are added 
 
 ## Deploy
 
-Server: Ubuntu VPS `169.58.149.137`, user `root`, SSH key `E:\Personal\vishnu\projects\servers\kvgc_key_pair.pem`.
+Server: Ubuntu VPS `169.58.149.137`, user `root`, SSH key file kept outside this repository.
 
 | Item | Value |
 |---|---|
@@ -186,6 +186,6 @@ Note: the `heh_test` database holds the **live** data despite its name.
    they carry the Google email. Then issue the SSL certificate with certbot and set `SITE_URL` in `.env`.
 6. Keep the old server for a week or two as a fallback (switch the two DNS records back to undo).
 
-> The server hosts other projects (kvgc, yoga, stock360, zoofilings, batterydukaan, whatsapp, ...).
+> The server is shared with other, unrelated projects.
 > Only touch `/srv/heh`, `heh-api.service`, the `heh_test` database and the two `heh-*` nginx files.
 > Always run `nginx -t` before `systemctl reload nginx`.

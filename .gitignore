@@ -1,3 +1,6 @@
 # local development uploads (images and private member documents)
 /uploads-dev/
 /uploads-dev-documents/
+
+# Local notes for Claude Code (server access details): keep on this computer only, never commit
+/CLAUDE.md
