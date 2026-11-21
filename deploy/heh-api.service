@@ -1,0 +1,23 @@
+[Unit]
+Description=HEH (Hyderabad Entrepreneurs Hub) API - port 1502
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=heh
+Group=heh
+WorkingDirectory=/srv/heh/prod/backend
+ExecStart=/usr/local/bin/node src/server.js
+Restart=always
+RestartSec=5
+StandardOutput=append:/srv/heh/prod/logs/api.log
+StandardError=append:/srv/heh/prod/logs/api-error.log
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/srv/heh/prod/uploads /srv/heh/prod/logs
+
+[Install]
+WantedBy=multi-user.target
