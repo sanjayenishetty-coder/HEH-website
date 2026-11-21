@@ -5,6 +5,7 @@ import { CountedTextarea, Field, FormError, useSubmit } from '../components/form
 import { IndustryBadge, Media } from '../components/ui.jsx';
 import { meta } from '../lib/api.js';
 import { useApi, useParam, useTitle } from '../lib/hooks.js';
+import { STATIC, whatsappLink } from '../lib/static.js';
 
 // Member profile page + "Send Enquiry" modal (enquiries go to HEH, not directly to the member). /member?m=<slug>
 
@@ -202,6 +203,12 @@ function Profile({ m, onEnquire }) {
   );
 }
 
+// Website-only build (lib/static.js): no enquiry form, so the request goes to HEH on WhatsApp instead.
+function enquireOnWhatsApp(title, m) {
+  const ask = title.charAt(0).toLowerCase() + title.slice(1);
+  window.open(whatsappLink(`Hello HEH, I would like to ${ask}${m.company ? ` (${m.company})` : ''}.`), '_blank', 'noopener');
+}
+
 export default function Member() {
   const slug = useParam('m');
   const navigate = useNavigate();
@@ -226,7 +233,7 @@ export default function Member() {
   if (!m) return <div className="container loading" style={{ padding: '120px 0' }}>Loading profile…</div>;
   return (
     <>
-      <Profile m={m} onEnquire={setModalTitle} />
+      <Profile m={m} onEnquire={STATIC ? (t) => enquireOnWhatsApp(t, m) : setModalTitle} />
       {modalTitle && <EnquiryModal slug={slug} title={modalTitle} onClose={closeModal} />}
     </>
   );

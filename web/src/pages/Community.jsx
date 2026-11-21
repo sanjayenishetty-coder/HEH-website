@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Icon, Ic } from '../components/Icon.jsx';
 import { CATEGORY_BADGE, INDUSTRY_STYLE, Media } from '../components/ui.jsx';
 import { useApi, useTitle } from '../lib/hooks.js';
+import { STATIC } from '../lib/static.js';
 import { GridNote, MemberCard } from './cards.jsx';
 
 function Members() {
@@ -82,15 +83,17 @@ export default function Community() {
         </div>
       </section>
 
-      <section className="section tight" style={{ paddingBottom: 40 }}>
-        <div className="container">
-          <div className="section-head">
-            <h2 className="title">Connections That Create Impact</h2>
-            <Link className="link-arrow navy" to="/success-stories">View all success stories <Icon name="arrow-right" /></Link>
+      {!STATIC && (
+        <section className="section tight" style={{ paddingBottom: 40 }}>
+          <div className="container">
+            <div className="section-head">
+              <h2 className="title">Connections That Create Impact</h2>
+              <Link className="link-arrow navy" to="/success-stories">View all success stories <Icon name="arrow-right" /></Link>
+            </div>
+            <div className="card-grid"><Stories /></div>
           </div>
-          <div className="card-grid"><Stories /></div>
-        </div>
-      </section>
+        </section>
+      )}
 
       <section className="cta-band no-icon">
         <div className="container">

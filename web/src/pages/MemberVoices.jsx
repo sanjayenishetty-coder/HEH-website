@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Icon } from '../components/Icon.jsx';
 import { useTitle } from '../lib/hooks.js';
+import { STATIC } from '../lib/static.js';
 
 // Member testimonial videos (YouTube Shorts) from the "Member voices" section of entrepreneurhub.in.
 const VIDEOS = ['FOuI4vQXQJE', '9Gsa21gmH2o', 'rv2avRy4A8Q'];
@@ -33,9 +34,11 @@ export default function MemberVoices() {
               </div>
             ))}
           </div>
-          <p className="voices-more">
-            Read how members have collaborated in our <Link to="/success-stories">Success Stories</Link>.
-          </p>
+          {!STATIC && (
+            <p className="voices-more">
+              Read how members have collaborated in our <Link to="/success-stories">Success Stories</Link>.
+            </p>
+          )}
         </div>
       </section>
 

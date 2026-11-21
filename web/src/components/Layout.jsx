@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Icon } from './Icon.jsx';
+import { STATIC } from '../lib/static.js';
 
 // Header menu; the logo links to Home, so Home is only listed in the footer.
 const NAV = [
@@ -9,7 +10,7 @@ const NAV = [
   ['/events', 'Events'],
   ['/community', 'Our Community'],
   ['/contact', 'Contact Us'],
-];
+].filter(([to]) => !(STATIC && to === '/events')); // website-only build: no Events section
 
 // Drop-down under "About HEH" (opens on hover/focus on desktop, taps open it in the phone menu).
 const ABOUT_MENU = [
@@ -86,9 +87,11 @@ function Header() {
             </NavLink>
           ))}
           {/* the header Login button is hidden at tablet/phone width, so the menu has it instead */}
-          <Link className="nav-login" to="/login" onClick={close}>Login</Link>
+          {!STATIC && <Link className="nav-login" to="/login" onClick={close}>Login</Link>}
         </nav>
-        <Link className="btn btn-primary btn-sm header-cta" to="/login">Login <Icon name="arrow-right" /></Link>
+        {STATIC
+          ? <Link className="btn btn-primary btn-sm header-cta" to="/membership-apply">Become a Member <Icon name="arrow-right" /></Link>
+          : <Link className="btn btn-primary btn-sm header-cta" to="/login">Login <Icon name="arrow-right" /></Link>}
       </div>
     </header>
   );

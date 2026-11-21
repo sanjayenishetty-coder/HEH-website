@@ -4,6 +4,7 @@ import { Icon, Ic } from '../components/Icon.jsx';
 import { CountedTextarea, Field, FormError, Select, useSubmit } from '../components/forms.jsx';
 import { meta } from '../lib/api.js';
 import { useParam, useTitle } from '../lib/hooks.js';
+import { EMAIL, STATIC, whatsappLink } from '../lib/static.js';
 
 const req = <span className="req">*</span>;
 
@@ -63,37 +64,49 @@ export default function Contact() {
 
       <section className="section tight" style={{ paddingBottom: 48 }}>
         <div className="container contact-layout">
-          <form key={formKey} className="panel pad" id="enquiry" noValidate onSubmit={onSubmit} onReset={onReset}>
-            <h2 className="title">Send Us a Message</h2>
-            <p style={{ margin: '12px 0 24px' }}>Complete the form below and our team will get back to you.</p>
-            <div className="form-grid">
-              <Field label={<>Full Name {req}</>} htmlFor="full_name" error={errors.full_name}>
-                <input className="input" id="full_name" name="full_name" maxLength={120} autoComplete="name" placeholder="Enter your full name" />
-              </Field>
-              <Field label={<>Mobile Number {req}</>} htmlFor="mobile" error={errors.mobile}>
-                <input className="input" id="mobile" name="mobile" type="tel" maxLength={16} autoComplete="tel" placeholder="Enter your mobile number" />
-              </Field>
-              <Field label={<>Email Address {req}</>} htmlFor="email" error={errors.email}>
-                <input className="input" id="email" name="email" type="email" maxLength={160} autoComplete="email" placeholder="Enter your email address" />
-              </Field>
-              <Field label="Company Name" htmlFor="company" error={errors.company}>
-                <input className="input" id="company" name="company" maxLength={160} autoComplete="organization" placeholder="Enter your company name" />
-              </Field>
-              <Field label={<>Enquiry Type {req}</>} htmlFor="enquiry_type" error={errors.enquiry_type} className="full">
-                <Select className="input" id="enquiry_type" name="enquiry_type" value={type} onChange={(e) => setType(e.target.value)} options={types} placeholder="Select enquiry type" />
-              </Field>
-              <Field label={<>Your Message {req}</>} htmlFor="message" error={errors.message} className="full">
-                <div style={{ position: 'relative' }}>
-                  <CountedTextarea className="input" id="message" name="message" maxLength={500} placeholder="Tell us how we can help you..." />
-                </div>
-              </Field>
+          {STATIC ? (
+            <div className="panel pad" id="enquiry">
+              <h2 className="title">Send Us a Message</h2>
+              <p style={{ margin: '12px 0 24px' }}>Message us on WhatsApp or send an email, and our team will get back to you within one business day.</p>
+              <div className="btn-row">
+                <a className="btn btn-primary" href={whatsappLink('Hello HEH, I have a question.')} target="_blank" rel="noopener" style={{ minWidth: 210 }}>Chat on WhatsApp <Icon name="arrow-right" /></a>
+                <a className="btn btn-outline" href={`mailto:${EMAIL}?subject=${encodeURIComponent('Enquiry from the HEH website')}`} style={{ minWidth: 190 }}><Icon name="mail" /> Email Us</a>
+              </div>
+              <p style={{ marginTop: 22 }}>Interested in joining? <Link to="/membership-apply">Apply for membership</Link>.</p>
             </div>
-            <FormError message={formError} style={{ marginTop: 16 }} />
-            <div className="btn-row" style={{ marginTop: 22 }}>
-              <button className="btn btn-primary" type="submit" disabled={busy} style={{ minWidth: 190 }}>Send Message <Icon name="arrow-right" /></button>
-              <button className="btn btn-outline" type="reset" style={{ minWidth: 160 }}>Clear Form</button>
-            </div>
-          </form>
+          ) : (
+            <form key={formKey} className="panel pad" id="enquiry" noValidate onSubmit={onSubmit} onReset={onReset}>
+              <h2 className="title">Send Us a Message</h2>
+              <p style={{ margin: '12px 0 24px' }}>Complete the form below and our team will get back to you.</p>
+              <div className="form-grid">
+                <Field label={<>Full Name {req}</>} htmlFor="full_name" error={errors.full_name}>
+                  <input className="input" id="full_name" name="full_name" maxLength={120} autoComplete="name" placeholder="Enter your full name" />
+                </Field>
+                <Field label={<>Mobile Number {req}</>} htmlFor="mobile" error={errors.mobile}>
+                  <input className="input" id="mobile" name="mobile" type="tel" maxLength={16} autoComplete="tel" placeholder="Enter your mobile number" />
+                </Field>
+                <Field label={<>Email Address {req}</>} htmlFor="email" error={errors.email}>
+                  <input className="input" id="email" name="email" type="email" maxLength={160} autoComplete="email" placeholder="Enter your email address" />
+                </Field>
+                <Field label="Company Name" htmlFor="company" error={errors.company}>
+                  <input className="input" id="company" name="company" maxLength={160} autoComplete="organization" placeholder="Enter your company name" />
+                </Field>
+                <Field label={<>Enquiry Type {req}</>} htmlFor="enquiry_type" error={errors.enquiry_type} className="full">
+                  <Select className="input" id="enquiry_type" name="enquiry_type" value={type} onChange={(e) => setType(e.target.value)} options={types} placeholder="Select enquiry type" />
+                </Field>
+                <Field label={<>Your Message {req}</>} htmlFor="message" error={errors.message} className="full">
+                  <div style={{ position: 'relative' }}>
+                    <CountedTextarea className="input" id="message" name="message" maxLength={500} placeholder="Tell us how we can help you..." />
+                  </div>
+                </Field>
+              </div>
+              <FormError message={formError} style={{ marginTop: 16 }} />
+              <div className="btn-row" style={{ marginTop: 22 }}>
+                <button className="btn btn-primary" type="submit" disabled={busy} style={{ minWidth: 190 }}>Send Message <Icon name="arrow-right" /></button>
+                <button className="btn btn-outline" type="reset" style={{ minWidth: 160 }}>Clear Form</button>
+              </div>
+            </form>
+          )}
 
           <aside className="panel pad">
             <h2 className="title sm">Our Location</h2>

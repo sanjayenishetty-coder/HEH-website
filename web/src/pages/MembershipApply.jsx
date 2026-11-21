@@ -5,6 +5,7 @@ import { Icon, Ic } from '../components/Icon.jsx';
 import { Field, FormError, Select } from '../components/forms.jsx';
 import { api, meta } from '../lib/api.js';
 import { useTitle } from '../lib/hooks.js';
+import { APPLY_URL, EMAIL, STATIC, whatsappLink } from '../lib/static.js';
 
 const KEY = 'heh-application-draft';
 const HERO = {
@@ -54,7 +55,50 @@ const AsideItem = ({ icon, tone, title, children }) => (
   <div className="aside-item"><Ic name={icon} tone={tone} /><div><h3>{title}</h3><p>{children}</p></div></div>
 );
 
-export default function MembershipApply() {
+// Website-only build (lib/static.js): the application is taken on the HEH Google form.
+function ApplyOnline() {
+  useTitle('Apply for Membership | Hyderabad Entrepreneurs Hub');
+  return (
+    <>
+      <section className="page-hero" style={{ paddingBottom: 30 }}>
+        <div className="container hero-grid">
+          <div>
+            <nav className="crumbs" aria-label="Breadcrumb">
+              <Link to="/">Home</Link><Icon name="chevron-right" /><Link to="/membership">Membership</Link><Icon name="chevron-right" /><span>Apply</span>
+            </nav>
+            <span className="eyebrow rule">HEH Membership Application</span>
+            <h1>Begin Your HEH Journey</h1>
+            <p className="lead" style={{ maxWidth: 560 }}>Share a few details about yourself and your business to begin your membership application.</p>
+          </div>
+        </div>
+      </section>
+      <section className="section tight" style={{ paddingBottom: 48 }}>
+        <div className="container contact-layout">
+          <div className="panel pad">
+            <h2 className="title">Apply Online</h2>
+            <p style={{ margin: '12px 0 24px' }}>The application takes about five minutes. The HEH Membership Committee reviews every application and our team will contact you about the next steps.</p>
+            <div className="btn-row">
+              <a className="btn btn-primary" href={APPLY_URL} target="_blank" rel="noopener" style={{ minWidth: 240 }}>Open the Application Form <Icon name="arrow-right" /></a>
+              <a className="btn btn-outline" href={whatsappLink('Hello HEH, I would like to know more about membership.')} target="_blank" rel="noopener">Ask Us on WhatsApp</a>
+            </div>
+            <p style={{ marginTop: 22 }}>Questions? Email <a href={`mailto:${EMAIL}`}>{EMAIL}</a> or read the <Link to="/faqs">FAQs</Link>.</p>
+          </div>
+          <aside className="panel soft pad">
+            <div className="aside-list">
+              <AsideItem icon="shield" tone="blue" title="Secure & Confidential">Your information is kept secure and used only for membership review.</AsideItem>
+              <AsideItem icon="users" title="Committee Review">All applications are carefully evaluated by the HEH Membership Committee.</AsideItem>
+              <AsideItem icon="file" tone="green" title="Next Step">Shortlisted applicants are invited to meet the HEH team before membership is confirmed.</AsideItem>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </>
+  );
+}
+
+export default STATIC ? ApplyOnline : MembershipApply;
+
+function MembershipApply() {
   useTitle('Apply for Membership | Hyderabad Entrepreneurs Hub');
   const navigate = useNavigate();
   const location = useLocation();

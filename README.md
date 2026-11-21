@@ -189,3 +189,26 @@ Note: the `heh_test` database holds the **live** data despite its name.
 > The server is shared with other, unrelated projects.
 > Only touch `/srv/heh`, `heh-api.service`, the `heh_test` database and the two `heh-*` nginx files.
 > Always run `nginx -t` before `systemctl reload nginx`.
+
+## Website-only build (Vercel)
+
+The public pages can also run without the API and database, on a static host. This is how
+entrepreneurhub.in is served from Vercel until the full app (admin, Member Portal, events, forms) moves to a server.
+
+```bash
+cd web && VITE_STATIC_SITE=1 npm run build   # -> web/dist, static files only
+```
+
+In this mode (`web/src/lib/static.js`): the member pages read `web/src/static-data/*.json` instead of `/api`;
+Events, Success Stories, Login, Admin and the Member Portal are switched off and their addresses go home; the
+membership application links to the Google form and Contact / "Connect Through HEH" use WhatsApp and email.
+The normal build is unchanged. `vercel.json` in the repo root tells Vercel to make this build.
+
+Refresh the member data after changing members (from the live API, or a local one with `API=...`):
+
+```bash
+cd web && node scripts/export-static-data.mjs
+```
+
+When you change a page, check that `VITE_STATIC_SITE=1 npm run build` still works and keep anything that needs
+the API behind `STATIC` (see the existing uses).

@@ -1,5 +1,8 @@
+import { STATIC, staticApi } from './static.js';
+
 // fetch wrapper for the Node API. Errors carry .status and .errors (field -> message) from validation.
 export async function api(path, opts = {}) {
+  if (STATIC) return staticApi(path, opts); // website-only build: see lib/static.js
   const isForm = typeof FormData !== 'undefined' && opts.body instanceof FormData;
   const res = await fetch(`/api${path}`, {
     method: opts.method || 'GET',

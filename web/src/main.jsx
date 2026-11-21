@@ -37,6 +37,7 @@ import WhoCanJoin from './pages/WhoCanJoin.jsx';
 import MemberVoices from './pages/MemberVoices.jsx';
 import MembershipPlan from './pages/MembershipPlan.jsx';
 import NotFound from './pages/NotFound.jsx';
+import { STATIC } from './lib/static.js';
 
 // The admin panel is its own bundle, loaded only at /admin/.
 const Admin = lazy(() => import('./admin/Admin.jsx'));
@@ -52,7 +53,35 @@ function OldUrl() {
   return <Navigate to={`${to}${search}`} replace />;
 }
 
+// Website-only build (lib/static.js): pages that need the API are not available; their addresses go home.
+const OFF = ['admin/*', 'portal/*', 'login', 'membership-submitted', 'enquiry-submitted', 'events', 'past-events', 'event',
+  'event-register', 'registration-confirmed', 'success-stories', 'story'];
+
 function App() {
+  if (STATIC) {
+    return (
+      <Routes>
+        {OFF.map((p) => <Route key={p} path={p} element={<Navigate to="/" replace />} />)}
+        <Route element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route path="about" element={<About />} />
+          <Route path="membership" element={<Membership />} />
+          <Route path="membership-apply" element={<MembershipApply />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="community" element={<Community />} />
+          <Route path="members" element={<Members />} />
+          <Route path="member" element={<Member />} />
+          <Route path="faqs" element={<Faqs />} />
+          <Route path="our-members" element={<OurMembers />} />
+          <Route path="why-heh" element={<WhyHeh />} />
+          <Route path="who-can-join" element={<WhoCanJoin />} />
+          <Route path="member-voices" element={<MemberVoices />} />
+          <Route path="membership-plan" element={<MembershipPlan />} />
+          <Route path="*" element={<NotFoundOrOld />} />
+        </Route>
+      </Routes>
+    );
+  }
   return (
     <Routes>
       <Route path="/admin/*" element={<Suspense fallback={null}><Admin /></Suspense>} />
