@@ -2,7 +2,7 @@
 
 Website for **Hyderabad Entrepreneurs Hub (HEH)**, built from the design screenshots in `images/` (latest set in `images/Website/`).
 
-**Live:** https://heh.visuprojects.in  (also http://169.58.149.137:1501)
+**Live:** https://heh.visuprojects.in
 
 ## Structure
 
@@ -64,7 +64,7 @@ npm run build             # -> web/dist (with SERVE_STATIC=1 the API also serves
 ```
 
 To use the server's database from your machine, tunnel it:
-`ssh -i <key> -N -L 15432:127.0.0.1:5432 root@169.58.149.137` and use port 15432 in `DATABASE_URL`.
+`ssh -i <key> -N -L 15432:127.0.0.1:5432 root@<server-ip>` and use port 15432 in `DATABASE_URL`.
 
 ## Database migrations
 
@@ -119,7 +119,7 @@ by email once `SMTP_*` is set up. Event videos for the portal gallery are added 
 
 ## Deploy
 
-Server: Ubuntu VPS `169.58.149.137`, user `root`, SSH key file kept outside this repository.
+Server: Ubuntu VPS (IP address, login and SSH key are kept outside this repository).
 
 | Item | Value |
 |---|---|
@@ -132,7 +132,7 @@ Server: Ubuntu VPS `169.58.149.137`, user `root`, SSH key file kept outside this
 | nginx (port 1501) | `/etc/nginx/sites-available/heh-prod` |
 | nginx (domain + HTTPS) | `/etc/nginx/sites-available/heh-domain` (certbot SSL) |
 | Backups made before changes | `/srv/heh/prod/backups/` |
-| DNS | A record `heh` → `169.58.149.137` (GoDaddy, visuprojects.in) |
+| DNS | A record `heh` → the server's IP (GoDaddy, visuprojects.in) |
 
 Both nginx sites proxy `/api/` to `127.0.0.1:1502`, serve `/uploads/`, and send `Cache-Control: no-cache`
 for the site so browsers always re-check for new versions (see `deploy/nginx-heh-locations.conf`).
