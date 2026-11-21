@@ -4,6 +4,7 @@ import { Icon } from '../components/Icon.jsx';
 import { Media } from '../components/ui.jsx';
 import { fmt } from '../lib/format.js';
 import { useApi, useParam, useTitle } from '../lib/hooks.js';
+import { STATIC, whatsappLink } from '../lib/static.js';
 
 // Event page: details + registration CTA for upcoming events, highlights for past events. /event?e=<slug>
 
@@ -31,6 +32,13 @@ const spotlightLabel = (e) => (e.category === 'workshop' ? 'HEH Workshop' : 'HEH
 const mapsUrl = (e) =>
   e.map_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([e.venue_name, e.venue_address].filter(Boolean).join(', ') || 'Hyderabad')}`;
 
+// "Register for Event": the registration form, or (website-only build, lib/static.js) a WhatsApp message to HEH.
+function RegisterButton({ e, url }) {
+  if (!STATIC) return <Link className="btn btn-primary" to={url}>Register for Event <Icon name="arrow-right" /></Link>;
+  const text = `Hello HEH, I would like to register for "${e.title}"${e.event_date ? ` on ${fmt.date(e.event_date)}` : ''}.`;
+  return <a className="btn btn-primary" href={whatsappLink(text)} target="_blank" rel="noopener">Register on WhatsApp <Icon name="arrow-right" /></a>;
+}
+
 function Upcoming({ e }) {
   const venueKnown = e.venue_name && !/to be announced/i.test(e.venue_name);
   const regUrl = `/event-register?e=${encodeURIComponent(e.slug)}`;
@@ -51,7 +59,7 @@ function Upcoming({ e }) {
               <div><Icon name="users" />{e.members_only ? 'Member Exclusive' : 'Open Event'}</div>
             </div>
             {canRegister
-              ? <div className="btn-row" style={{ marginTop: 28 }}><Link className="btn btn-primary" to={regUrl}>Register for Event <Icon name="arrow-right" /></Link></div>
+              ? <div className="btn-row" style={{ marginTop: 28 }}><RegisterButton e={e} url={regUrl} /></div>
               : <p className="status-pill closed" style={{ marginTop: 26 }}>Registration Closed</p>}
           </div>
           <Media url={e.image_url} label={e.image_url ? e.title : 'Event image will be uploaded here'} />
@@ -135,7 +143,7 @@ function Upcoming({ e }) {
               <p style={{ marginTop: 8 }}>Connect with fellow entrepreneurs, exchange ideas and strengthen meaningful business relationships.</p>
             </div>
             <div className="actions">
-              {canRegister && <Link className="btn btn-primary" to={regUrl}>Register for Event <Icon name="arrow-right" /></Link>}
+              {canRegister && <RegisterButton e={e} url={regUrl} />}
               <Link className="btn btn-outline" to="/events">Back to Events</Link>
             </div>
           </div>
@@ -174,7 +182,7 @@ function Past({ e }) {
         </div>
       </section>
 
-      <section className="section tight">
+      {(!STATIC || photos.some(Boolean)) && <section className="section tight">
         <div className="container">
           <h2 className="title sm" style={{ marginBottom: 18 }}>Moments From the Event</h2>
           <div className="gallery">
@@ -183,7 +191,7 @@ function Past({ e }) {
               : <Media key={i} url="" />))}
           </div>
         </div>
-      </section>
+      </section>}
 
       {f && (
         <section className="section tight">

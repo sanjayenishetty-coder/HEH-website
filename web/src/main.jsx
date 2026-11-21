@@ -54,8 +54,8 @@ function OldUrl() {
 }
 
 // Website-only build (lib/static.js): pages that need the API are not available; their addresses go home.
-const OFF = ['admin/*', 'portal/*', 'login', 'enquiry-submitted', 'events', 'past-events', 'event',
-  'event-register', 'registration-confirmed', 'success-stories', 'story'];
+const OFF = ['admin/*', 'portal/*', 'login', 'enquiry-submitted', 'event-register', 'registration-confirmed',
+  'success-stories', 'story'];
 
 function App() {
   if (STATIC) {
@@ -69,6 +69,9 @@ function App() {
           <Route path="membership-apply" element={<MembershipApply />} />
           <Route path="membership-submitted" element={<MembershipSubmitted />} />
           <Route path="contact" element={<Contact />} />
+          <Route path="events" element={<Events when="upcoming" />} />
+          <Route path="past-events" element={<Events when="past" />} />
+          <Route path="event" element={<Event />} />
           <Route path="community" element={<Community />} />
           <Route path="members" element={<Members />} />
           <Route path="member" element={<Member />} />

@@ -1,10 +1,11 @@
 // Website-only build (no API, no database): `VITE_STATIC_SITE=1 npm run build`.
 // Used for hosting just the public pages on a static host such as Vercel. In this mode:
-//  - GET /api/members..., /api/members/<slug> and /api/meta are answered from src/static-data/*.json
+//  - GET /api/members..., /api/members/<slug>, /api/events..., /api/events/<slug> and /api/meta are answered
+//    from src/static-data/*.json
 //    (refresh them with `node scripts/export-static-data.mjs`, see that file);
 //  - the membership application is emailed to APPLICATIONS_EMAIL (sendApplication below);
-//  - everything else (events, stories, other forms, login, admin, portal) is switched off: Contact and
-//    "Connect Through HEH" use WhatsApp and email instead.
+//  - everything else (event registration, stories, other forms, login, admin, portal) is switched off:
+//    Contact, "Connect Through HEH" and "Register for Event" use WhatsApp and email instead.
 // The normal build (no VITE_STATIC_SITE) is unchanged and still uses the Node API.
 export const STATIC = import.meta.env.VITE_STATIC_SITE === '1';
 
@@ -20,7 +21,8 @@ const load = () => (data = data || Promise.all([
   import('../static-data/members.json'),
   import('../static-data/member-profiles.json'),
   import('../static-data/meta.json'),
-]).then(([m, p, meta]) => ({ members: m.default, profiles: p.default, meta: meta.default })));
+  import('../static-data/events.json'),
+]).then(([m, p, meta, ev]) => ({ members: m.default, profiles: p.default, meta: meta.default, events: ev.default })));
 
 function unavailable(status = 404) {
   const err = new Error(status === 404 ? 'Not found' : 'This feature is not available on this website.');
@@ -40,12 +42,59 @@ function listMembers({ members }, params) {
   return { items: rows.slice(offset, offset + limit), total: rows.length, industries: members.industries };
 }
 
+// Events, as in GET /api/events and /api/events/<slug> (backend/src/routes/public.js, eventrules.js).
+// Upcoming/past and registration are worked out from today's date in India, so an event moves to
+// Past Events by itself once its date has gone by.
+const todayIST = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10);
+const LIST_COLS = ['id', 'slug', 'title', 'category', 'short_description', 'event_date', 'start_time', 'end_time',
+  'venue_name', 'image_url', 'members_only', 'registration_open'];
+
+function withStatus(e) {
+  const isPast = Boolean(e.event_date && e.event_date < todayIST());
+  const open = Boolean(e.registration_open) && !isPast;
+  return { ...e, is_past: isPast, registration_open: open, registration_note: open ? '' : 'Registration for this event is closed.' };
+}
+
+function listEvents({ events }, params) {
+  const past = params.get('when') === 'past';
+  const today = todayIST();
+  let rows = events.filter((e) => (past ? e.event_date && e.event_date < today : !e.event_date || e.event_date >= today));
+  const category = params.get('category');
+  if (['spotlight', 'workshop'].includes(category)) rows = rows.filter((e) => e.category === category);
+  const year = Number(params.get('year'));
+  if (Number.isInteger(year) && year > 2000) rows = rows.filter((e) => e.event_date && Number(e.event_date.slice(0, 4)) === year);
+  const month = Number(params.get('month'));
+  if (Number.isInteger(month) && month >= 1 && month <= 12) rows = rows.filter((e) => e.event_date && Number(e.event_date.slice(5, 7)) === month);
+  rows = [...rows].sort((a, b) => {
+    if (a.event_date !== b.event_date) {
+      if (!a.event_date) return 1; // no date yet: last
+      if (!b.event_date) return -1;
+      return past ? b.event_date.localeCompare(a.event_date) : a.event_date.localeCompare(b.event_date);
+    }
+    return b.id - a.id;
+  });
+  const limit = Math.min(Number(params.get('limit')) || 6, 30);
+  const offset = Math.max(Number(params.get('offset')) || 0, 0);
+  const years = [...new Set(events.filter((e) => e.event_date).map((e) => Number(e.event_date.slice(0, 4))))].sort((a, b) => b - a);
+  const items = rows.slice(offset, offset + limit).map((e) => {
+    const s = withStatus(e);
+    return Object.fromEntries(LIST_COLS.map((k) => [k, s[k]]));
+  });
+  return { items, total: rows.length, years };
+}
+
 export async function staticApi(path, opts = {}) {
   if ((opts.method || 'GET') !== 'GET') throw unavailable(503);
   const url = new URL(path, 'https://local');
   const d = await load();
   if (url.pathname === '/meta') return d.meta;
   if (url.pathname === '/members') return listMembers(d, url.searchParams);
+  if (url.pathname === '/events') return listEvents(d, url.searchParams);
+  const ev = url.pathname.match(/^\/events\/([^/]+)$/);
+  if (ev) {
+    const e = d.events.find((x) => x.slug === decodeURIComponent(ev[1]));
+    if (e) return withStatus(e);
+  }
   const m = url.pathname.match(/^\/members\/([^/]+)$/);
   if (m) {
     const profile = d.profiles[decodeURIComponent(m[1])];

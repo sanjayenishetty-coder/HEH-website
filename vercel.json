@@ -5,13 +5,37 @@
   "buildCommand": "cd web && VITE_STATIC_SITE=1 npm run build",
   "outputDirectory": "web/dist",
   "redirects": [
-    { "source": "/team", "destination": "/our-members", "permanent": true },
-    { "source": "/apply", "destination": "/membership-apply", "permanent": true },
-    { "source": "/events/:path*", "destination": "/", "permanent": false },
-    { "source": "/privacy", "destination": "/", "permanent": false }
+    {
+      "source": "/team",
+      "destination": "/our-members",
+      "permanent": true
+    },
+    {
+      "source": "/apply",
+      "destination": "/membership-apply",
+      "permanent": true
+    },
+    {
+      "source": "/privacy",
+      "destination": "/",
+      "permanent": false
+    }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
-    { "source": "/assets/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400" }] }
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    }
   ]
 }

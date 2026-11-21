@@ -199,14 +199,15 @@ entrepreneurhub.in is served from Vercel until the full app (admin, Member Porta
 cd web && VITE_STATIC_SITE=1 npm run build   # -> web/dist, static files only
 ```
 
-In this mode (`web/src/lib/static.js`): the member pages read `web/src/static-data/*.json` instead of `/api`;
-Events, Success Stories, Login, Admin and the Member Portal are switched off and their addresses go home; the
+In this mode (`web/src/lib/static.js`): the member pages, Events and Past Events read `web/src/static-data/*.json`
+instead of `/api` ("Register for Event" opens WhatsApp); Success Stories, Login, Admin and the Member Portal are
+switched off and their addresses go home; the
 membership application form is emailed to naresh@entrepreneurhub.in through FormSubmit (formsubmit.co; the
 first application sends that mailbox a one-time "Activate form" email, which must be confirmed), and Contact /
 "Connect Through HEH" use WhatsApp and email. A floating WhatsApp button (+91 63007 99266) is on every page.
 The normal build is unchanged. `vercel.json` in the repo root tells Vercel to make this build.
 
-Refresh the member data after changing members (from the live API, or a local one with `API=...`):
+Refresh the member and event data after changing members or events (from the live API, or a local one with `API=...`):
 
 ```bash
 cd web && node scripts/export-static-data.mjs

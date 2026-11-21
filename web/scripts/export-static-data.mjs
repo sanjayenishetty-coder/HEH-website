@@ -20,7 +20,7 @@ const items = [];
 let industries = {};
 for (let offset = 0; ; offset += 40) {
   const page = await get(`/members?limit=40&offset=${offset}`);
-  industries = page.industries;
+  industries = Object.fromEntries(Object.entries(page.industries).sort(([a], [b]) => a.localeCompare(b))); // stable order
   items.push(...page.items);
   if (!page.items.length || items.length >= page.total) break;
 }
@@ -28,8 +28,26 @@ const profiles = {};
 for (const m of items) profiles[m.slug] = await get(`/members/${encodeURIComponent(m.slug)}`);
 const meta = await get('/meta');
 
+// Events: every published event (upcoming and past) with its full details.
+const slugs = [];
+for (const when of ['upcoming', 'past']) {
+  for (let offset = 0; ; offset += 30) {
+    const page = await get(`/events?when=${when}&limit=30&offset=${offset}`);
+    slugs.push(...page.items.map((e) => e.slug));
+    if (!page.items.length || offset + page.items.length >= page.total) break;
+  }
+}
+const events = [];
+const INTERNAL = ['submitted_by', 'submitted_at', 'reviewed_by', 'reviewed_at', 'review_note', 'approval_status'];
+for (const slug of slugs) {
+  const e = await get(`/events/${encodeURIComponent(slug)}`);
+  for (const k of INTERNAL) delete e[k];
+  events.push(e);
+}
+
 mkdirSync(OUT, { recursive: true });
 writeFileSync(new URL('members.json', OUT), JSON.stringify({ items, industries }));
 writeFileSync(new URL('member-profiles.json', OUT), JSON.stringify(profiles));
 writeFileSync(new URL('meta.json', OUT), JSON.stringify(meta));
-console.log(`static data: ${items.length} members, ${Object.keys(profiles).length} profiles from ${API}`);
+writeFileSync(new URL('events.json', OUT), JSON.stringify(events));
+console.log(`static data: ${items.length} members, ${Object.keys(profiles).length} profiles, ${events.length} events from ${API}`);

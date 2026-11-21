@@ -10,7 +10,7 @@ const NAV = [
   ['/events', 'Events'],
   ['/community', 'Our Community'],
   ['/contact', 'Contact Us'],
-].filter(([to]) => !(STATIC && to === '/events')); // website-only build: no Events section
+];
 
 // Drop-down under "About HEH" (opens on hover/focus on desktop, taps open it in the phone menu).
 const ABOUT_MENU = [
