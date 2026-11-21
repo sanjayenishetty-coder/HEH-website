@@ -201,7 +201,9 @@ cd web && VITE_STATIC_SITE=1 npm run build   # -> web/dist, static files only
 
 In this mode (`web/src/lib/static.js`): the member pages read `web/src/static-data/*.json` instead of `/api`;
 Events, Success Stories, Login, Admin and the Member Portal are switched off and their addresses go home; the
-membership application links to the Google form and Contact / "Connect Through HEH" use WhatsApp and email.
+membership application form is emailed to naresh@entrepreneurhub.in through FormSubmit (formsubmit.co; the
+first application sends that mailbox a one-time "Activate form" email, which must be confirmed), and Contact /
+"Connect Through HEH" use WhatsApp and email. A floating WhatsApp button (+91 63007 99266) is on every page.
 The normal build is unchanged. `vercel.json` in the repo root tells Vercel to make this build.
 
 Refresh the member data after changing members (from the live API, or a local one with `API=...`):

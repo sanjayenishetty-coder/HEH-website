@@ -2,12 +2,15 @@
 // Used for hosting just the public pages on a static host such as Vercel. In this mode:
 //  - GET /api/members..., /api/members/<slug> and /api/meta are answered from src/static-data/*.json
 //    (refresh them with `node scripts/export-static-data.mjs`, see that file);
-//  - everything else (events, stories, forms, login, admin, portal) is switched off: forms point to
-//    the Google application form, WhatsApp and email instead.
+//  - the membership application is emailed to APPLICATIONS_EMAIL (sendApplication below);
+//  - everything else (events, stories, other forms, login, admin, portal) is switched off: Contact and
+//    "Connect Through HEH" use WhatsApp and email instead.
 // The normal build (no VITE_STATIC_SITE) is unchanged and still uses the Node API.
 export const STATIC = import.meta.env.VITE_STATIC_SITE === '1';
 
-export const APPLY_URL = 'https://forms.gle/nCFCD5x5aGdHeBPk6';
+// Membership applications are emailed here (no database in this build), through FormSubmit (formsubmit.co).
+// The first submission sends this mailbox a one-time "Activate form" email; applications arrive once it is confirmed.
+export const APPLICATIONS_EMAIL = 'naresh@entrepreneurhub.in';
 export const WHATSAPP = '916300799266';
 export const EMAIL = 'heh@entrepreneurhub.in';
 export const whatsappLink = (text) => `https://wa.me/${WHATSAPP}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
@@ -49,4 +52,31 @@ export async function staticApi(path, opts = {}) {
     if (profile) return profile;
   }
   throw unavailable(404);
+}
+
+// Website-only build: email a membership application. Returns the confirmation shown on /membership-submitted.
+export async function sendApplication(fields) {
+  const ref = `HEH-APP-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+  const labels = {
+    full_name: 'Full name', mobile: 'Mobile', email: 'Email', designation: 'Designation', linkedin: 'LinkedIn',
+    company_name: 'Company', business_category: 'Business category', year_established: 'Year established',
+    business_location: 'Business location', website: 'Website', turnover_range: 'Annual turnover',
+    business_description: 'Business description',
+  };
+  const body = { _subject: `HEH membership application: ${fields.full_name} (${fields.company_name})`, _template: 'table', 'Application reference': ref };
+  for (const [k, label] of Object.entries(labels)) if (fields[k]) body[label] = k === 'mobile' ? `+91 ${String(fields[k]).replace(/^\+?91\s?/, '')}` : fields[k];
+  body._replyto = fields.email; // replying to the email answers the applicant
+  const res = await fetch(`https://formsubmit.co/ajax/${APPLICATIONS_EMAIL}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || String(data.success) !== 'true') {
+    throw new Error(`Your application could not be sent right now. Please try again, or email it to ${APPLICATIONS_EMAIL}.`);
+  }
+  return {
+    ref, full_name: fields.full_name, company_name: fields.company_name,
+    business_category: fields.business_category, created_at: new Date().toISOString(), status: 'received',
+  };
 }

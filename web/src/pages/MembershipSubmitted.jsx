@@ -3,6 +3,7 @@ import { Icon, Ic } from '../components/Icon.jsx';
 import { fmt } from '../lib/format.js';
 import { useApi, useParam, useTitle } from '../lib/hooks.js';
 import { ICONS } from '../lib/icons.js';
+import { STATIC } from '../lib/static.js';
 
 const STATUS = { received: 'Received', under_review: 'Under Review', interaction: 'Interaction', approved: 'Approved', rejected: 'Not Approved' };
 
@@ -17,11 +18,21 @@ const Row = ({ icon, tone = '', k, children }) => (
   <div className="row"><Ic name={icon} tone={tone} /><span className="k">{k}</span><span className="v">{children}</span></div>
 );
 
+function readSent(ref) {
+  try {
+    const s = JSON.parse(sessionStorage.getItem('heh-application-sent'));
+    return s && s.ref === ref ? s : null;
+  } catch { return null; }
+}
+
 export default function MembershipSubmitted() {
   useTitle('Application Submitted | Hyderabad Entrepreneurs Hub');
   const ref = useParam('ref') || '';
   const t = useParam('t') || '';
-  const { data: a, loading } = useApi(`/applications/${encodeURIComponent(ref)}?t=${encodeURIComponent(t)}`);
+  const api = useApi(STATIC ? null : `/applications/${encodeURIComponent(ref)}?t=${encodeURIComponent(t)}`);
+  // Website-only build: no database, so show what this tab just sent (lib/static.js sendApplication).
+  const a = STATIC ? readSent(ref) : api.data;
+  const loading = STATIC ? false : api.loading;
 
   return (
     <>
@@ -88,7 +99,9 @@ export default function MembershipSubmitted() {
           </div>
           <div className="btn-row center" style={{ margin: '30px 0 20px' }}>
             <Link className="btn btn-primary" to="/" style={{ minWidth: 230 }}>Back to Home <Icon name="arrow-right" /></Link>
-            <Link className="btn btn-outline" to="/events" style={{ minWidth: 240 }}>Explore HEH Events</Link>
+            {STATIC
+              ? <Link className="btn btn-outline" to="/our-members" style={{ minWidth: 240 }}>Meet the Board Members</Link>
+              : <Link className="btn btn-outline" to="/events" style={{ minWidth: 240 }}>Explore HEH Events</Link>}
           </div>
         </div>
       </section>

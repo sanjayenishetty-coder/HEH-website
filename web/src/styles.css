@@ -987,3 +987,17 @@ a.team-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(13
 .who-intro .btn { padding: 13px 20px; font-size: 15px; white-space: nowrap; }
 @media (max-width: 1080px) and (min-width: 961px) { .who-intro .btn-row { flex-wrap: wrap; } }
 @media (max-width: 520px) { .who-intro .btn-row { flex-wrap: wrap; } }
+/* Floating WhatsApp button (components/Layout.jsx) */
+.wa-float {
+  position: fixed; right: 22px; bottom: 22px; z-index: 30; display: flex; align-items: center; gap: 10px;
+  height: 58px; padding: 0 16px; border-radius: 999px; background: #25d366; color: #fff; text-decoration: none;
+  box-shadow: 0 10px 26px rgba(10, 37, 71, .22); transition: transform .15s ease, box-shadow .15s ease;
+}
+.wa-float:hover, .wa-float:focus-visible { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(10, 37, 71, .28); color: #fff; }
+.wa-float svg { width: 28px; height: 28px; fill: currentColor; flex: none; }
+.wa-float .wa-label { font-weight: 600; font-size: 15px; white-space: nowrap; }
+@media (max-width: 860px) {
+  .wa-float { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); width: 56px; height: 56px; padding: 0; justify-content: center; }
+  .wa-float .wa-label { display: none; }
+}
+@media print { .wa-float { display: none; } }

@@ -54,7 +54,7 @@ function OldUrl() {
 }
 
 // Website-only build (lib/static.js): pages that need the API are not available; their addresses go home.
-const OFF = ['admin/*', 'portal/*', 'login', 'membership-submitted', 'enquiry-submitted', 'events', 'past-events', 'event',
+const OFF = ['admin/*', 'portal/*', 'login', 'enquiry-submitted', 'events', 'past-events', 'event',
   'event-register', 'registration-confirmed', 'success-stories', 'story'];
 
 function App() {
@@ -67,6 +67,7 @@ function App() {
           <Route path="about" element={<About />} />
           <Route path="membership" element={<Membership />} />
           <Route path="membership-apply" element={<MembershipApply />} />
+          <Route path="membership-submitted" element={<MembershipSubmitted />} />
           <Route path="contact" element={<Contact />} />
           <Route path="community" element={<Community />} />
           <Route path="members" element={<Members />} />
